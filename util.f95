@@ -1,35 +1,47 @@
 module util
     implicit none
 
-
 contains
 
-    subroutine RadialSchrodinger(u, Potential, h, int_max, EigenValue0, EigenValue)
-
+    subroutine KohnSham1D(u, Potential, h, int_max, EigenValue_min, EigenValue_max, tolerance)
 
         integer i, j, int_max
         real (kind = 8) , dimension(:) :: Potential, u
         integer :: n
-        real (kind = 8)  :: EigenValue0, EigenValue, u0, E_aux, h
+        real (kind = 8) :: EigenValue_min, EigenValue_max, EigenValue, E_aux, h, tolerance
 
         n = size(u)
+        i = 1
+        EigenValue = (EigenValue_min + EigenValue_max)/2
 
-        u = Numerov(h, n, u, -2*(EigenValue0-Potential))
-        u0 = u(1)
-        print *,EigenValue0
-        print *,u(1)
+        ! Main loop for finding the Kohn-Sham eigenvalue
+        do while (abs(EigenValue-EigenValue_min)>=tolerance .and. i<int_max)
 
-        do i=1, int_max
+            ! Integrating wave function via Numerov
+            u = Numerov(h, n, u, -2*(EigenValue-Potential))
 
-            u = Numerov(h, n, u, -2*(EigenValue0-Potential))
+            print *,"Eigen Value tested:", EigenValue
+            print *,"Boundary term:", u(1)
+            print *,"*-----------------------*"
 
-            E_aux = EigenValue
-            print *,EigenValue
-            EigenValue = (EigenValue0*u(1) - EigenValue*u0)/(u(1)-u0)
+            ! Bisection method approaching boundary condition
+            if (u(1)<0) then
+                EigenValue_max = EigenValue
+            else
+                EigenValue_min = EigenValue
+            end if
+            EigenValue = (EigenValue_min + EigenValue_max)/2
 
-            u0 = u(1)
-            EigenValue0 = E_aux
+            i = i + 1
+
         end do
+
+        ! Satisfying tolerance for final result
+        if (abs(EigenValue-EigenValue_min)<tolerance) then
+            print *,"Converged for eigenvalue", EigenValue
+        else
+            print *, "Did not conveged within ", int_max, " iterations"
+        end if
 
     contains
 
@@ -48,6 +60,6 @@ contains
             Numerov = u
         end function Numerov
 
-    end subroutine RadialSchrodinger
+    end subroutine KohnSham1D
 
 end module util
