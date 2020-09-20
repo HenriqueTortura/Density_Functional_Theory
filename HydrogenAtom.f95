@@ -5,8 +5,8 @@ program HydrogenAtom
     implicit none
 
     integer i
-    integer, parameter :: r0 = 0, r_max = 20, int_max = 100
-    real (kind = 8) , parameter :: h = 0.0004 ! Discretization
+    integer, parameter :: r0 = 0, r_max = 50, int_max = 100
+    real (kind = 8) , parameter :: h = 0.0001 ! Discretization
     integer, parameter :: n = int((r_max-r0)/h) ! Number of steps
 
     real (kind = 8) , dimension(1:n) :: r, Potential, u, Potential_U
@@ -23,7 +23,7 @@ program HydrogenAtom
     u(n) = r(n)*exp(-r(n))
     u(n-1) = r(n-1)*exp(-r(n-1))
 
-    EigenValue_min = -10
+    EigenValue_min = -20
     EigenValue_max = 0
 
     call KohnSham1D(u, Potential, h, int_max, EigenValue_min, EigenValue_max, tolerance)
@@ -33,7 +33,7 @@ program HydrogenAtom
 
     call Poisson(r, u, Potential_U, h)
 
-    ! To plot Potential U
+    ! To plot u(r) and Potential U
     open(1, file='u.dat', status='replace')
         do i=1, n
             write(1,*) r(i), u(i)
