@@ -1,4 +1,4 @@
-program HeliumAtom
+program HydrogenAtom
 
     use util
 
