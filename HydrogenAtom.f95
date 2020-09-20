@@ -28,13 +28,21 @@ program HydrogenAtom
 
     call KohnSham1D(u, Potential, h, int_max, EigenValue_min, EigenValue_max, tolerance)
 
+    ! Normalizing u
+    u = u/sqrt(sum(u*u*h))
+
     call Poisson(r, u, Potential_U, h)
 
     ! To plot Potential U
-    open(1, file='Potential_U.dat', status='replace')
+    open(1, file='u.dat', status='replace')
         do i=1, n
-            write(1,*) r(i), Potential_U(i)
+            write(1,*) r(i), u(i)
         end do
     close(1)
+    open(2, file='Potential_U.dat', status='replace')
+        do i=1, n
+            write(2,*) r(i), Potential_U(i)
+        end do
+    close(2)
 
 end program
