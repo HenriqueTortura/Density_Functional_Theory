@@ -4,13 +4,12 @@ program HeliumAtom
 
     implicit none
 
-
     integer i
-    integer, parameter :: r0 = 0, r_max = 20, int_max = 10
-    real (kind = 8) , parameter :: h = 0.0004 ! Parâmetro da discretização
+    integer, parameter :: r0 = 0, r_max = 20, int_max = 100
+    real (kind = 8) , parameter :: h = 0.00004 ! Parâmetro da discretização
     integer, parameter :: n = int((r_max-r0)/h) ! Número de intervalos
-    real (kind = 8) , dimension(1:n) :: r, f, Potential, u
-    real (kind = 8)  :: EigenValue0, EigenValue, u0, E_aux
+    real (kind = 8) , dimension(1:n) :: r, Potential, u
+    real (kind = 8)  :: EigenValue_min, EigenValue_max, E_aux, tolerance
 
     ! Inicializando as posições e o Potencial
     do i=1, n
@@ -18,15 +17,14 @@ program HeliumAtom
         Potential(i) = -1/r(i)
     end do
 
-    ! Chutes iniciais
+    tolerance = 0.00001
 
-    u0 = h
     u(n) = r(n)*exp(-r(n))
     u(n-1) = r(n-1)*exp(-r(n-1))
-    EigenValue0 = -0.6
-    EigenValue = -0.4
 
-    call RadialSchrodinger(u, Potential, h, int_max, EigenValue0, EigenValue)
+    EigenValue_min = -10
+    EigenValue_max = 0
 
+    call KohnSham1D(u, Potential, h, int_max, EigenValue_min, EigenValue_max, tolerance)
 
 end program
