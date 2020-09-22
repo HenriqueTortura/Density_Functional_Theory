@@ -3,15 +3,32 @@ module util
 
 contains
 
-    subroutine KohnSham1D(u, Potential, h, int_max, EigenValue_min, EigenValue_max, tolerance)
+    subroutine KohnSham1D(r, u, Potential, h, int_max, EigenValue_min, EigenValue_max, tolerance)
+    ! Routine to solve a one dimentional Kohn-Sham (Schrödinger) equation.
+    ! Parameters
+    !   r: 1D array of coordinates to run by;
+    !   Potential: Effective potential of Kohn-Sham equation;
+    !   h: Discretization of array r;
+    !   int_max: Maximum number of iterations;
+    !   EigenValue_min & EigenValue_max: boundaries for possible eigenvalue;
+    !   tolerance: Maximum difference between eigenvalue in each iteration to determinate convergency.
+    ! Returns
+    !   u: Radial wave function u(r) = r*\psi(r);
+    !   EigenValue: Eigenvalue of function u(r) satisfying boundary conditions.
 
         integer i, j, int_max
-        real (kind = 8), dimension(:) :: Potential, u
+        real (kind = 8), dimension(:) :: Potential, u, r
         integer :: n
         real (kind = 8) :: EigenValue_min, EigenValue_max, EigenValue, E_aux, h, tolerance
 
+        ! Arrays size and interation counter
         n = size(u)
         i = 1
+
+        ! Initial wave function guess
+        u(n) = r(n)*exp(-r(n))
+        u(n-1) = r(n-1)*exp(-r(n-1))
+
         EigenValue = (EigenValue_min + EigenValue_max)/2
 
         ! Main loop for finding the Kohn-Sham eigenvalue
@@ -43,9 +60,21 @@ contains
             print *, "Did not conveged within ", int_max, " iterations"
         end if
 
+        ! Normalizing u
+        u = u/sqrt(sum(u*u*h))
+
     contains
 
         function Numerov(h, n, u, f)
+        ! Applies Numerov's method for the wave function.
+        ! Parameters
+        !   h: Discretization;
+        !   n: Number of steps, i.e., size of array;
+        !   (part of) u: Two guesses at boundary of wave function on the form u(r) = r*\psi(r);
+        !   f: f function on Numerov's method.
+        ! Returns
+        !   u: Integrated wave function.
+
             integer :: i, n
             real (kind = 8) :: h, a, b, c
             real (kind = 8), dimension(1:n) :: u, f, Numerov
@@ -58,6 +87,7 @@ contains
             end do
 
             Numerov = u
+
         end function Numerov
 
     end subroutine KohnSham1D

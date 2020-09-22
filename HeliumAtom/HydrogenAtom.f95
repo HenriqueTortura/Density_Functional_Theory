@@ -20,16 +20,10 @@ program HydrogenAtom
 
     tolerance = 0.00001
 
-    u(n) = r(n)*exp(-r(n))
-    u(n-1) = r(n-1)*exp(-r(n-1))
-
     EigenValue_min = -20
     EigenValue_max = 0
 
-    call KohnSham1D(u, Potential, h, int_max, EigenValue_min, EigenValue_max, tolerance)
-
-    ! Normalizing u
-    u = u/sqrt(sum(u*u*h))
+    call KohnSham1D(r, u, Potential, h, int_max, EigenValue_min, EigenValue_max, tolerance)
 
     call Poisson(r, u, Potential_U, h)
 
