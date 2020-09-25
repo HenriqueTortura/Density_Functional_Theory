@@ -3,7 +3,7 @@ module util
 
 contains
 
-    subroutine KohnSham1D(r, u, Potential, h, int_max, EigenValue_min, EigenValue_max, tolerance)
+    subroutine KohnSham1D(r, u, Potential, h, int_max, EigenValue_min, EigenValue_max, EigenValue, tolerance)
     ! Routine to solve a one dimentional Kohn-Sham (Schrödinger) equation.
     ! Parameters
     !   r: 1D array of coordinates to run by;
