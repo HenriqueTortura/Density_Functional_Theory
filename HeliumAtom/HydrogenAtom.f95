@@ -11,7 +11,7 @@ program HydrogenAtom
 
     real (kind = 8) , dimension(1:n) :: r, Potential, u, Potential_U
 
-    real (kind = 8)  :: EigenValue_min, EigenValue_max, tolerance
+    real (kind = 8)  :: EigenValue_min, EigenValue_max, EigenValue, tolerance
 
     do i=1, n
         r(i) = r0 + h*i
@@ -23,7 +23,7 @@ program HydrogenAtom
     EigenValue_min = -20
     EigenValue_max = 0
 
-    call KohnSham1D(r, u, Potential, h, int_max, EigenValue_min, EigenValue_max, tolerance)
+    call KohnSham1D(r, u, Potential, h, int_max, EigenValue_min, EigenValue_max, EigenValue, tolerance)
 
     call Poisson(r, u, Potential_U, h)
 
