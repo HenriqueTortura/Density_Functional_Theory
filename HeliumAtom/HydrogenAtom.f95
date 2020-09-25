@@ -11,7 +11,7 @@ program HydrogenAtom
 
     real (kind = 8) , dimension(1:n) :: r, Potential, u, Potential_U
 
-    real (kind = 8)  :: EigenValue_min, EigenValue_max, E_aux, tolerance
+    real (kind = 8)  :: EigenValue_min, EigenValue_max, tolerance
 
     do i=1, n
         r(i) = r0 + h*i
