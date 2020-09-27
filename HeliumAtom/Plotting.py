@@ -82,21 +82,3 @@ if 1:
     plt.savefig('BoundaryTerm_vs_Eigenvalue--'+spec+'.png',
                 dpi=200, bbox_inches='tight')
     
-#%% Sweep Helium
-if 1:
-    path = '/home/lordemomo/Documentos/Density_Functional_Theory/HeliumAtom/'
-    eigenvalues, u0s = np.genfromtxt(path+'Helium_u0s.dat', unpack = 'True')
-
-    plt.figure(figsize=(16,9))
-    plt.title('Boundary Term vs Eigenvalue - '
-              +str(np.size(eigenvalues))+' points', fontsize=20)
-    plt.plot(eigenvalues, u0s)
-    plt.xlabel('Eigenvalue', fontsize=18)
-    plt.ylabel('u(0)', fontsize=18)
-    plt.grid()
-    
-    spec='global'
-    
-    plt.tight_layout()
-    plt.savefig(path+'HeliumBoundaryTerm_vs_Eigenvalue--'+spec+'.png',
-                dpi=200, bbox_inches='tight')

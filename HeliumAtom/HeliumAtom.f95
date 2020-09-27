@@ -34,7 +34,7 @@ program HeliumAtom
     i = 1
 
     do while(abs(Eigenvalue-Eigenvalue_aux)>=self_tol .and. i<=int_max)
-        Eigenvalue_Range = (/ -10., 0. /)
+        Eigenvalue_Range = (/ -1., 0.2 /)
         Eigenvalue_aux = Eigenvalue
 
         print *,'**************************'
