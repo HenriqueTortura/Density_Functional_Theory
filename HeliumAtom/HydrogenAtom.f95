@@ -6,9 +6,9 @@ program HydrogenAtom
 
     ! Setting main parameters
     integer, parameter :: r0 = 0, r_max = 50, int_max = 100 ! Radial coordinates range
-    real (kind = 8) , parameter :: h = 0.0001, tolerance = 0.00001 ! Discretization
+    real (kind = 8) , parameter :: h = 0.0001, eigenvalue_tol = 0.00001, u0_tol= 0.001 ! Discretization
 
-    real (kind = 8), dimension(1:2) :: Eigenvalue_Range = (/-1., -0.2/) ! Eigenvalues range
+    real (kind = 8), dimension(1:2) :: Eigenvalue_Range = (/-1., -0.2/)
 
     integer, parameter :: n = int((r_max-r0)/h) ! Number of steps in the radial coordinate
 
@@ -23,7 +23,7 @@ program HydrogenAtom
     end do
 
     ! Solve Kohn-Sham
-    call KohnSham1D(r, u, Potential, Eigenvalue_Range, EigenValue, h, int_max, tolerance)
+    call KohnSham1D(r, u, Potential, Eigenvalue_Range, EigenValue, h, int_max, eigenvalue_tol, u0_tol)
 
     call Poisson(r, u, Potential_U, h)
 

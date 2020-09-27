@@ -3,7 +3,7 @@ module util
 
 contains
 
-    subroutine KohnSham1D(r, u, Potential, Eigenvalue_Range, EigenValue, h, int_max, tolerance)
+    subroutine KohnSham1D(r, u, Potential, Eigenvalue_Range, EigenValue, h, int_max, eigenvalue_tol, u0_tol)
     ! Routine to solve a one dimentional Kohn-Sham (Schrödinger) equation.
     ! Parameters
     !   r: 1D array of coordinates to run by;
@@ -20,7 +20,7 @@ contains
         real (kind = 8), dimension(:) :: Potential, u, r
         real (kind =8), dimension(1:2) :: Eigenvalue_Range
         integer :: n
-        real (kind = 8) :: EigenValue, E_aux, h, tolerance
+        real (kind = 8) :: EigenValue, E_aux, h, eigenvalue_tol, u0_tol
 
         ! Arrays size and interation counter
         n = size(u)
@@ -29,11 +29,12 @@ contains
         ! Initial wave function guess
         u(n) = r(n)*exp(-r(n))
         u(n-1) = r(n-1)*exp(-r(n-1))
+        u(1) = 42
 
         EigenValue = (Eigenvalue_Range(1) + Eigenvalue_Range(2))/2
 
         ! Main loop for finding the Kohn-Sham eigenvalue
-        do while (abs(EigenValue-Eigenvalue_Range(1))>=tolerance .and. i<int_max)
+        do while ( (abs(u(1))>=u0_tol .or. abs(EigenValue-Eigenvalue_Range(1))>=eigenvalue_tol) .and. i<int_max)
 
             ! Integrating wave function via Numerov
             u = Numerov(h, n, u, -2*(EigenValue-Potential))
@@ -43,7 +44,7 @@ contains
             print *,"*-----------------------*"
 
             ! Bisection method approaching boundary condition
-            if (abs(EigenValue-Eigenvalue_Range(1))>=tolerance) then
+            if ((abs(u(1))>=u0_tol .or. abs(EigenValue-Eigenvalue_Range(1))>=eigenvalue_tol)) then
                 if (u(1)<0) then
                     Eigenvalue_Range(2) = EigenValue
                 else
@@ -57,7 +58,7 @@ contains
         end do
 
         ! Satisfying tolerance for final result
-        if (abs(EigenValue-Eigenvalue_Range(1))<tolerance) then
+        if ((abs(u(1))<u0_tol .and. abs(EigenValue-Eigenvalue_Range(1))<eigenvalue_tol)) then
             print *,"Converged for eigenvalue", EigenValue
         else
             print *, "Did not conveged within ", int_max, " iterations"
@@ -104,8 +105,8 @@ contains
         n = size(r)
 
         ! Boundary condition at r=0 and first guess
-        Potential_U(1) = 0
-        Potential_U(2) = h
+        Potential_U(1) = r(1)
+        Potential_U(2) = r(2)
 
         ! Integrating Potential U via Verlet
         Potential_U = Verlet(Potential_U, -u**2/r, h, n)
@@ -121,7 +122,7 @@ contains
             real (kind = 8) :: h
 
             do i=3, n
-                Potential_U(i) = 2*Potential_U(i-1) - Potential_U(i-2) +h**2*F(i-1)
+                Potential_U(i) = 2*Potential_U(i-1) - Potential_U(i-2) + (h**2)*F(i-1)
             end do
 
             Verlet = Potential_U
@@ -158,9 +159,9 @@ contains
             u = u/sqrt(sum(u*u*h))
             u0s(i) = u(1)
 
-            print *,"Eigen Value tested:", Eigenvalues(i)
-            print *,"Boundary term:", u(1)
-            print *,"*-----------------------*"
+            !print *,"Eigen Value tested:", Eigenvalues(i)
+            !print *,"Boundary term:", u(1)
+            !print *,"*-----------------------*"
 
             i = i + 1
 

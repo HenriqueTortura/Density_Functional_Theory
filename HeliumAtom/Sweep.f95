@@ -8,8 +8,8 @@ program Sweep
     integer, parameter :: r0 = 0, r_max = 50, int_max = 100 ! Radial coordinates range
     real (kind = 8) , parameter :: h = 0.0001, tolerance = 0.00001 ! Discretization
 
-    real (kind = 8), dimension(1:2) :: Eigenvalue_Range = (/-1., 5./) ! Eigenvalues range
-    integer, parameter :: n_eigenvalues = 10001 ! Number of eigenvalues tested
+    real (kind = 8), dimension(1:2) :: Eigenvalue_Range = (/-1., 5./)
+    integer, parameter :: n_eigenvalues = 10001
 
     integer, parameter :: n = int((r_max-r0)/h) ! Number of steps
 
