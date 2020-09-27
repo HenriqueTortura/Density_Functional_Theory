@@ -3,14 +3,14 @@ module util
 
 contains
 
-    subroutine KohnSham1D(r, u, Potential, h, int_max, EigenValue_min, EigenValue_max, EigenValue, tolerance)
+    subroutine KohnSham1D(r, u, Potential, Eigenvalue_Range, EigenValue, h, int_max, tolerance)
     ! Routine to solve a one dimentional Kohn-Sham (Schrödinger) equation.
     ! Parameters
     !   r: 1D array of coordinates to run by;
     !   Potential: Effective potential of Kohn-Sham equation;
+    !   Eigenvalue_Range: boundaries for possible eigenvalue;
     !   h: Discretization of array r;
     !   int_max: Maximum number of iterations;
-    !   EigenValue_min & EigenValue_max: boundaries for possible eigenvalue;
     !   tolerance: Maximum difference between eigenvalue in each iteration to determinate convergency.
     ! Returns
     !   u: Radial wave function u(r) = r*\psi(r);
@@ -18,8 +18,9 @@ contains
 
         integer i, int_max
         real (kind = 8), dimension(:) :: Potential, u, r
+        real (kind =8), dimension(1:2) :: Eigenvalue_Range
         integer :: n
-        real (kind = 8) :: EigenValue_min, EigenValue_max, EigenValue, E_aux, h, tolerance
+        real (kind = 8) :: EigenValue, E_aux, h, tolerance
 
         ! Arrays size and interation counter
         n = size(u)
@@ -29,10 +30,10 @@ contains
         u(n) = r(n)*exp(-r(n))
         u(n-1) = r(n-1)*exp(-r(n-1))
 
-        EigenValue = (EigenValue_min + EigenValue_max)/2
+        EigenValue = (Eigenvalue_Range(1) + Eigenvalue_Range(2))/2
 
         ! Main loop for finding the Kohn-Sham eigenvalue
-        do while (abs(EigenValue-EigenValue_min)>=tolerance .and. i<int_max)
+        do while (abs(EigenValue-Eigenvalue_Range(1))>=tolerance .and. i<int_max)
 
             ! Integrating wave function via Numerov
             u = Numerov(h, n, u, -2*(EigenValue-Potential))
@@ -42,19 +43,21 @@ contains
             print *,"*-----------------------*"
 
             ! Bisection method approaching boundary condition
-            if (u(1)<0) then
-                EigenValue_max = EigenValue
-            else
-                EigenValue_min = EigenValue
+            if (abs(EigenValue-Eigenvalue_Range(1))>=tolerance) then
+                if (u(1)<0) then
+                    Eigenvalue_Range(2) = EigenValue
+                else
+                    Eigenvalue_Range(1) = EigenValue
+                end if
+                EigenValue = (Eigenvalue_Range(1) + Eigenvalue_Range(2))/2
             end if
-            EigenValue = (EigenValue_min + EigenValue_max)/2
 
             i = i + 1
 
         end do
 
         ! Satisfying tolerance for final result
-        if (abs(EigenValue-EigenValue_min)<tolerance) then
+        if (abs(EigenValue-Eigenvalue_Range(1))<tolerance) then
             print *,"Converged for eigenvalue", EigenValue
         else
             print *, "Did not conveged within ", int_max, " iterations"
@@ -128,17 +131,17 @@ contains
     end subroutine Poisson
 
 !! Fooling around
-    subroutine KohnShamSweep(r, u, Potential, h, EigenValues, u0s)
+    subroutine KohnShamSweep(r, u, Potential, h, Eigenvalues, u0s)
 
         integer i
         real (kind = 8), dimension(:) :: Potential, u, r
-        real (kind = 8), dimension(:) :: EigenValues, u0s
+        real (kind = 8), dimension(:) :: Eigenvalues, u0s
         integer :: n, n_eigenvalues
         real (kind = 8) :: h
 
         ! Arrays size and interation counter
         n = size(u)
-        n_eigenvalues = size(EigenValues)
+        n_eigenvalues = size(Eigenvalues)
         i = 1
 
         ! Initial wave function guess
@@ -149,13 +152,13 @@ contains
         do while (i <= n_eigenvalues)
 
             ! Integrating wave function via Numerov
-            u = Numerov(h, n, u, -2*(EigenValues(i)-Potential))
+            u = Numerov(h, n, u, -2*(Eigenvalues(i)-Potential))
 
             ! Normalizing u
             u = u/sqrt(sum(u*u*h))
             u0s(i) = u(1)
 
-            print *,"Eigen Value tested:", EigenValues(i)
+            print *,"Eigen Value tested:", Eigenvalues(i)
             print *,"Boundary term:", u(1)
             print *,"*-----------------------*"
 
