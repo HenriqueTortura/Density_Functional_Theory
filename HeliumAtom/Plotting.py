@@ -1,16 +1,8 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-"""
-Created on Fri Sep 25 11:46:13 2020
-
-@author: lordemomo
-"""
-
 import numpy as np
 from matplotlib import pyplot as plt
 
 
-#%%
+#%% Wave function / Probability
 if 1:
     r, u = np.genfromtxt('Hydrogen_u.dat', unpack = 'True', skip_footer=400000)
     prob = u**2/(2*np.pi)

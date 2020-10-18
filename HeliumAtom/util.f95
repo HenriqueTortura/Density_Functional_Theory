@@ -11,30 +11,30 @@ contains
     !   Eigenvalue_Range: boundaries for possible eigenvalue;
     !   h: Discretization of array r;
     !   int_max: Maximum number of iterations;
-    !   tolerance: Maximum difference between eigenvalue in each iteration to determinate convergency.
+    !   eigenvalue_tol: Maximum difference between eigenvalue in each iteration to determinate convergency.
+    !   u0_tol: Maximum absolute value for u at 'origin', expecting to converge for u(1) = 0
     ! Returns
     !   u: Radial wave function u(r) = r*\psi(r);
     !   EigenValue: Eigenvalue of function u(r) satisfying boundary conditions.
 
         integer i, int_max
         real (kind = 8), dimension(:) :: Potential, u, r
-        real (kind =8), dimension(1:2) :: Eigenvalue_Range
-        integer :: n
+        real (kind =8), dimension(2) :: Eigenvalue_Range
+        integer :: n !Dimension of Potential, u and r
         real (kind = 8) :: EigenValue, E_aux, h, eigenvalue_tol, u0_tol
 
         ! Arrays size and interation counter
         n = size(u)
-        i = 1
 
         ! Initial wave function guess
         u(n) = r(n)*exp(-r(n))
         u(n-1) = r(n-1)*exp(-r(n-1))
-        u(1) = 42
-
-        EigenValue = (Eigenvalue_Range(1) + Eigenvalue_Range(2))/2
+        u(1) = abs(2*u0_tol)
 
         ! Main loop for finding the Kohn-Sham eigenvalue
-        do while ( (abs(u(1))>=u0_tol .or. abs(EigenValue-Eigenvalue_Range(1))>=eigenvalue_tol) .and. i<int_max)
+        do i=1, int_max, 1
+
+            EigenValue = (Eigenvalue_Range(1) + Eigenvalue_Range(2))/2
 
             ! Integrating wave function via Numerov
             u = Numerov(h, n, u, -2*(EigenValue-Potential))
@@ -50,18 +50,17 @@ contains
                 else
                     Eigenvalue_Range(1) = EigenValue
                 end if
-                EigenValue = (Eigenvalue_Range(1) + Eigenvalue_Range(2))/2
+            else
+                exit
             end if
-
-            i = i + 1
 
         end do
 
         ! Satisfying tolerance for final result
         if ((abs(u(1))<u0_tol .and. abs(EigenValue-Eigenvalue_Range(1))<eigenvalue_tol)) then
-            print *,"Converged for eigenvalue", EigenValue
+            print *,"Converged for eigenvalue: ", EigenValue
         else
-            print *, "Did not conveged within ", int_max, " iterations"
+            print *, "Did not conveged within ", (i-1), " iterations"
         end if
 
         ! Normalizing u
@@ -97,6 +96,13 @@ contains
     end subroutine KohnSham1D
 
     subroutine Poisson(r, u, Potential_U, h)
+    ! Routine to solve a Poisson equation of radial potential Hartree potential.
+    ! Parameters
+    !   r: 1D array of coordinates to run by;
+    !   u: Radial wave function u(r) = r*\psi(r);
+    !   h: Discretization of array r;
+    ! Returns
+    !   Potential_U: U radial function, related with Hartree Potential by Hartree = r*U(r).
 
         real (kind = 8), dimension(:) :: r, u, Potential_U
         real (kind = 8) :: h, a
@@ -117,6 +123,15 @@ contains
 
     contains
         function Verlet(Potential_U, F, h, n)
+        ! Applies Verlet integration for Potential_U.
+        ! Parameters
+        !   h: Discretization;
+        !   n: Number of steps, i.e., size of array;
+        !   (part of) Potential_U: Two guesses at boundary on the form Potential_U(r) = r;
+        !   F: F function on Verlet algorithm.
+        ! Returns
+        !   Potential_U: Integrated potential.
+
             integer :: i, n
             real (kind = 8), dimension(1:n) :: F, Potential_U, Verlet
             real (kind = 8) :: h

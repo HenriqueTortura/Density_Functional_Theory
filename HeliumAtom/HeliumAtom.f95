@@ -5,16 +5,17 @@ program HeliumAtom
     implicit none
 
     ! Setting main parameters
-    integer, parameter :: r0 = 0, r_max = 30, int_max_KS = 100, int_max = 100
-    real (kind = 8) , parameter :: pi = 3.141592653589793, h = 0.0001, Eigenvalue_tol = 0.001, u0_tol= 0.001, self_tol=0.001 ! Discretization
+    integer, parameter :: r0 = 0, r_max = 30, int_max_KS = 100, int_max = 100 ! Radial and iterations limits
+    real (kind = 8) , parameter :: pi = 3.141592653589793, h = 0.0001, & ! Discretization
+    &Eigenvalue_tol = 0.001, u0_tol= 0.001, self_tol=0.001 ! Tolerances
 
-    real (kind = 8), dimension(1:2) :: Eigenvalue_Range
+    real (kind = 8), dimension(2) :: E_Range_aux, Eigenvalue_Range = (/ -5., 0./) ! Eigenvalue range
 
     integer, parameter :: n = int((r_max-r0)/h) ! Number of steps
 
     integer i, j
     real (kind = 8) , dimension(1:n) :: r, u, Ext_Potential, Hartree, Exchange, Potential_U
-    real (kind = 8)  :: Eigenvalue_min, Eigenvalue_max, Eigenvalue, Eigenvalue_aux, Energy
+    real (kind = 8)  :: Eigenvalue, Eigenvalue_aux, Energy
 
     integer, parameter :: n_Eigenvalues = 101
     real (kind = 8), dimension(1:n_Eigenvalues) :: Eigenvalues, u0s
@@ -28,28 +29,32 @@ program HeliumAtom
         Exchange(i) = 0
     end do
 
-    Eigenvalue = 42
     Eigenvalue_aux = 0
+    Eigenvalue = Eigenvalue_aux + 2*self_tol
 
     i = 1
 
-    do while(abs(Eigenvalue-Eigenvalue_aux)>=self_tol .and. i<=int_max)
-        Eigenvalue_Range = (/ -1., 0.2 /)
-        Eigenvalue_aux = Eigenvalue
+    do i=1, int_max
 
         print *,'**************************'
         print *,'**************************'
         print *,"Iteration: ",i
 
-        call KohnSham1D(r, u, Ext_Potential+Hartree+Exchange, Eigenvalue_Range, Eigenvalue, h, int_max_KS, Eigenvalue_tol, u0_tol)
+        E_Range_aux = Eigenvalue_Range
+        Eigenvalue_aux = Eigenvalue
 
-        call Poisson(r, u, Potential_U, h)
+        call KohnSham1D(r, u, Ext_Potential+Hartree+Exchange, E_Range_aux, &
+        &Eigenvalue, h, int_max_KS, Eigenvalue_tol, u0_tol)
 
-        Hartree = 2 * Potential_U / r
+        if (abs(Eigenvalue-Eigenvalue_aux)>=self_tol) then
+            call Poisson(r, u, Potential_U, h)
 
-        Exchange = -((3./2.)*(u/(pi * r))**2.)**(1.0/3.0)
+            Hartree = 2 * Potential_U / r
 
-        i = i + 1
+            Exchange = -((3./2.)*(u/(pi * r))**2.)**(1.0/3.0)
+        else
+            exit
+        end if
 
     end do
 
