@@ -17,9 +17,9 @@ program HeliumAtom
     real (kind = 8) , dimension(1:n) :: r, u, Ext_Potential, Hartree, Exchange, Potential_U
     real (kind = 8)  :: Eigenvalue, Eigenvalue_aux, Energy
 
-    integer, parameter :: n_Eigenvalues = 101
-    real (kind = 8), dimension(1:n_Eigenvalues) :: Eigenvalues, u0s
+    real :: start, finish
 
+    call cpu_time(start)
 
     ! Initializing radial coordinates and potentials
     do i=1, n
@@ -43,11 +43,11 @@ program HeliumAtom
         E_Range_aux = Eigenvalue_Range
         Eigenvalue_aux = Eigenvalue
 
-        call KohnSham1D(r, u, Ext_Potential+Hartree+Exchange, E_Range_aux, &
-        &Eigenvalue, h, int_max_KS, Eigenvalue_tol, u0_tol)
+        call KohnSham1D(r, u, Ext_Potential+Hartree+Exchange, E_Range_aux, Eigenvalue,&
+        &int_max_KS, Eigenvalue_tol, u0_tol, n, h, 0d8, 0d8, .TRUE.)
 
         if (abs(Eigenvalue-Eigenvalue_aux)>=self_tol) then
-            call Poisson(r, u, Potential_U, h)
+            call Poisson(r, u, Potential_U, n, h, 0d8, 0d8, .TRUE.)
 
             Hartree = 2 * Potential_U / r
 
@@ -60,5 +60,8 @@ program HeliumAtom
 
     Energy = 2. * Eigenvalue - sum(Hartree*(u**2.)*h) - (1./2.)*sum(Exchange*(u**2.)*h)
     print *,"Energy: ",Energy
+
+    call cpu_time(finish)
+    print *,"CPU time = ",finish-start,"s"
 
 end program

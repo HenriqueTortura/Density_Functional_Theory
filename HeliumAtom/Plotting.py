@@ -22,7 +22,7 @@ if 1:
     plt.title('Probability 2D', fontsize=20)
     ax.set_ylim(0,3)
     #ax.grid(False)
-    plt.savefig('hydrogen2D.png', dpi=200, bbox_inches='tight')
+    plt.savefig('img/hydrogen2D.png', dpi=200, bbox_inches='tight')
 
 
     plt.figure(figsize=(16,9))
@@ -33,7 +33,7 @@ if 1:
     plt.xlim(0,10)
     plt.xticks(np.arange(0, 10, step=1))
     plt.grid()
-    plt.savefig('hydrogen1D.png', dpi=200, bbox_inches='tight')
+    plt.savefig('img/hydrogen1D.png', dpi=200, bbox_inches='tight')
 
 #%% Sweep Hydrogen
 if 1:
@@ -71,6 +71,22 @@ if 1:
             spec='unknown'
     
     plt.tight_layout()
-    plt.savefig('BoundaryTerm_vs_Eigenvalue--'+spec+'.png',
+    plt.savefig('img/BoundaryTerm_vs_Eigenvalue--'+spec+'.png',
                 dpi=200, bbox_inches='tight')
     
+#%%
+if 1:
+    
+    delta = 0.00001
+    j_max = 300000
+    r_max = 30
+    
+    j = np.linspace(1,j_max,j_max)
+    
+    rp = r_max/(np.exp(j_max*delta)-1)
+    rj = rp*(np.exp(j*delta)-1)
+    
+    plt.figure(figsize=(16,9))
+    plt.plot(j, rj)
+    plt.grid()
+    plt.show()
