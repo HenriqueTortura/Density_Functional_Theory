@@ -5,7 +5,7 @@ program Teste
     implicit none
 
     ! Setting main parameters
-    real (kind = 8), parameter, dimension(2) :: r_range = (/ 0., 30./) , Eigenvalue_Range = (/ -5., 0./)
+    real (kind = 8), parameter, dimension(2) :: r_range = (/ 0., 30./), Eigenvalue_Range = (/ -5., 0./)
 
     integer, parameter :: KS_int_max = 100, SelfCons_int_max = 100
 

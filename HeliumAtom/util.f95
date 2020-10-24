@@ -4,82 +4,136 @@ module util
 
 contains
 
+    subroutine HydrogenAtom(r_range, Eigenvalue_range, KS_int_max,&
+    &Eigenvalue_tol, u0_tol, Uniform, h, j_max, delta)
+
+        integer :: n, j_max, i, KS_int_max, AllocateStatus
+        real (kind = 8) , parameter :: pi = 3.141592653589793
+
+        real (kind = 8), dimension(2) :: r_range, Eigenvalue_Range
+        real (kind = 8)  :: Eigenvalue, Eigenvalue_aux, Energy,&
+        &Eigenvalue_tol, u0_tol, h, delta, rp
+
+        real (kind = 8), dimension(:), allocatable :: r, u, Potential, Potential_U
+
+        logical :: Uniform
+
+        if (Uniform) then
+            n = int((r_range(2)-r_range(1))/h)
+        else
+            rp = r_range(2)/(exp(j_max*delta)-1)
+            n = j_max
+        end if
+
+        allocate(r(n), u(n), Potential(n), Potential_U(n), stat = AllocateStatus)
+        if (AllocateStatus /= 0) stop "*** Not enough memory ***"
+
+        ! Initializing radial coordinates and effective potential
+        do i=1, n
+            if (Uniform) then
+                r(i) = r_range(1) + h*i
+            else
+                r(i) = rp*(exp(i*delta)-1)
+            end if
+            Potential(i) = -1/r(i)
+        end do
+
+        ! Solve Kohn-Sham
+        call KohnSham1D(r, u, Potential, Eigenvalue_Range, Eigenvalue,&
+        &KS_int_max, Eigenvalue_tol, u0_tol, n, h, rp, delta, Uniform)
+
+        call Poisson(r, u, Potential_U, n, h, rp, delta, Uniform)
+
+        ! To plot u(r) and Potential U
+        open(1, file='Hydrogen_u.dat', status='replace')
+            do i=1, n
+                write(1,*) r(i), u(i)
+            end do
+        close(1)
+        open(2, file='Hydrogen_Potential_U.dat', status='replace')
+            do i=1, n
+                write(2,*) r(i), Potential_U(i)
+            end do
+        close(2)
+
+    end subroutine HydrogenAtom
+
     subroutine HeliumAtom(r_range, Eigenvalue_range, SelfCons_int_max, KS_int_max,&
     &Eigenvalue_tol, u0_tol, SelfCons_tol, Uniform, h, j_max, delta)
 
-    integer :: n, j_max, i, j, KS_int_max, SelfCons_int_max, AllocateStatus
-    real (kind = 8) , parameter :: pi = 3.141592653589793
+        integer :: n, j_max, i, j, KS_int_max, SelfCons_int_max, AllocateStatus
+        real (kind = 8) , parameter :: pi = 3.141592653589793
 
-    real (kind = 8), dimension(2) :: r_range, Eigenvalue_Range, E_Range_aux
-    real (kind = 8)  :: Eigenvalue, Eigenvalue_aux, Energy,&
-    &Eigenvalue_tol, u0_tol, SelfCons_tol, h, delta, rp
+        real (kind = 8), dimension(2) :: r_range, Eigenvalue_Range, E_Range_aux
+        real (kind = 8)  :: Eigenvalue, Eigenvalue_aux, Energy,&
+        &Eigenvalue_tol, u0_tol, SelfCons_tol, h, delta, rp
 
-    real (kind = 8), dimension(:), allocatable :: r, u, Ext_Potential, Hartree, Exchange, Potential_U, j_array
+        real (kind = 8), dimension(:), allocatable :: r, u, Ext_Potential, Hartree, Exchange, Potential_U, j_array
 
-    logical :: Uniform
-
-    if (Uniform) then
-        n = int((r_range(2)-r_range(1))/h)
-    else
-        rp = r_range(2)/(exp(j_max*delta)-1)
-        n = j_max
-    end if
-
-    allocate(r(n), u(n), Ext_Potential(n), Hartree(n), Exchange(n), Potential_U(n), j_array(N), stat = AllocateStatus)
-    if (AllocateStatus /= 0) stop "*** Not enough memory ***"
-
-    ! Initializing radial coordinates and potentials
-    do i=1, n
-
-        j_array(i) = i
+        logical :: Uniform
 
         if (Uniform) then
-            r(i) = r_range(1) + h*i
+            n = int((r_range(2)-r_range(1))/h)
         else
-            r(i) = rp*(exp(i*delta)-1)
+            rp = r_range(2)/(exp(j_max*delta)-1)
+            n = j_max
         end if
 
-        Ext_Potential(i) = -2/r(i)
-        Hartree(i) = 0
-        Exchange(i) = 0
+        allocate(r(n), u(n), Ext_Potential(n), Hartree(n), Exchange(n), Potential_U(n), j_array(N), stat = AllocateStatus)
+        if (AllocateStatus /= 0) stop "*** Not enough memory ***"
 
-    end do
+        ! Initializing radial coordinates and potentials
+        do i=1, n
 
-    Eigenvalue_aux = 0
-    Eigenvalue = Eigenvalue_aux + 2*SelfCons_tol
+            j_array(i) = i
 
-    do i=1, SelfCons_int_max
+            if (Uniform) then
+                r(i) = r_range(1) + h*i
+            else
+                r(i) = rp*(exp(i*delta)-1)
+            end if
 
-        print *,'**************************'
-        print *,'**************************'
-        print *,"Iteration: ",i
+            Ext_Potential(i) = -2/r(i)
+            Hartree(i) = 0
+            Exchange(i) = 0
 
-        E_Range_aux = Eigenvalue_Range
-        Eigenvalue_aux = Eigenvalue
+        end do
 
-        call KohnSham1D(r, u, Ext_Potential+Hartree+Exchange, E_Range_aux, Eigenvalue,&
-        &KS_int_max, Eigenvalue_tol, u0_tol, n, h, rp, delta, Uniform)
+        Eigenvalue_aux = 0
+        Eigenvalue = Eigenvalue_aux + 2*SelfCons_tol
 
-        if (abs(Eigenvalue-Eigenvalue_aux)>=SelfCons_tol) then
-            call Poisson(r, u, Potential_U, n, h, rp, delta, Uniform)
+        do i=1, SelfCons_int_max
 
-            Hartree = 2 * Potential_U / r
+            print *,'**************************'
+            print *,'**************************'
+            print *,"Iteration: ",i
 
-            Exchange = -((3./2.)*(u/(pi * r))**2.)**(1.0/3.0)
+            E_Range_aux = Eigenvalue_Range
+            Eigenvalue_aux = Eigenvalue
+
+            call KohnSham1D(r, u, Ext_Potential+Hartree+Exchange, E_Range_aux, Eigenvalue,&
+            &KS_int_max, Eigenvalue_tol, u0_tol, n, h, rp, delta, Uniform)
+
+            if (abs(Eigenvalue-Eigenvalue_aux)>=SelfCons_tol) then
+                call Poisson(r, u, Potential_U, n, h, rp, delta, Uniform)
+
+                Hartree = 2 * Potential_U / r
+
+                Exchange = -((3./2.)*(u/(pi * r))**2.)**(1.0/3.0)
+            else
+                exit
+            end if
+
+        end do
+
+        if (Uniform) then
+            Energy = 2. * Eigenvalue - sum(Hartree*(u**2.)*h) - (1./2.)*sum(Exchange*(u**2.)*h)
         else
-            exit
+            Energy = 2. * Eigenvalue - rp*delta*sum(Hartree*(u**2.)*(exp(j_array*delta)-1))&
+            & - rp*delta*(1./2.)*sum(Exchange*(u**2.)*(exp(j_array*delta)-1))
         end if
 
-    end do
-
-    if (Uniform) then
-        Energy = 2. * Eigenvalue - sum(Hartree*(u**2.)*h) - (1./2.)*sum(Exchange*(u**2.)*h)
-    else
-        Energy = 2. * Eigenvalue - rp*delta*sum(Hartree*(u**2.)*(exp(j_array*delta)-1))&
-        & - rp*delta*(1./2.)*sum(Exchange*(u**2.)*(exp(j_array*delta)-1))
-    end if
-
-    print *,"Energy: ",Energy
+        print *,"Energy: ",Energy
 
     end subroutine HeliumAtom
 

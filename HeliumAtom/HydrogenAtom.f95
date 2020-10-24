@@ -1,42 +1,25 @@
-program HydrogenAtom
+program Hydrogen
 
     use util
 
     implicit none
 
     ! Setting main parameters
-    integer, parameter :: r0 = 0, r_max = 50, int_max = 100 ! Radial coordinates range
-    real (kind = 8) , parameter :: h = 0.0001, eigenvalue_tol = 0.00001, u0_tol= 0.001 ! Discretization
+    real (kind = 8), dimension(2) :: r_range = (/ 0., 30./), Eigenvalue_Range = (/-1., -0.2/)
 
-    real (kind = 8), dimension(1:2) :: Eigenvalue_Range = (/-1., -0.2/)
+    integer, parameter :: KS_int_max = 100
 
-    integer, parameter :: n = int((r_max-r0)/h) ! Number of steps in the radial coordinate
+    real (kind = 8) , parameter :: eigenvalue_tol = 0.00001, u0_tol= 0.001
 
-    integer i
-    real (kind = 8), dimension(1:n) :: r, Potential, u, Potential_U
-    real (kind = 8) :: Eigenvalue
+    logical, parameter :: Uniform = .FALSE.
 
-    ! Initializing radial coordinates and effective potential
-    do i=1, n
-        r(i) = r0 + h*i
-        Potential(i) = -1/r(i)
-    end do
+    real (kind = 8), parameter :: h = 0.0001
 
-    ! Solve Kohn-Sham
-    call KohnSham1D(r, u, Potential, Eigenvalue_Range, EigenValue, h, int_max, eigenvalue_tol, u0_tol)
+    integer, parameter :: j_max = 200000
+    real (kind = 8), parameter :: delta = 0.0001
 
-    call Poisson(r, u, Potential_U, h)
 
-    ! To plot u(r) and Potential U
-    open(1, file='Hydrogen_u.dat', status='replace')
-        do i=1, n
-            write(1,*) r(i), u(i)
-        end do
-    close(1)
-    open(2, file='Hydrogen_Potential_U.dat', status='replace')
-        do i=1, n
-            write(2,*) r(i), Potential_U(i)
-        end do
-    close(2)
+    call HydrogenAtom(r_range, Eigenvalue_range, KS_int_max, Eigenvalue_tol, u0_tol, Uniform, h, j_max, delta)
+
 
 end program
