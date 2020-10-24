@@ -11,7 +11,7 @@ program Teste
 
     real (kind = 8), parameter :: Eigenvalue_tol = 0.001, u0_tol = 0.001, SelfCons_tol = 0.001
 
-    logical, parameter :: Uniform = .FALSE.
+    logical, dimension(2), parameter :: Uniform_Numerov = (/ .FALSE., .FALSE./)
 
     real (kind = 8), parameter :: h = 0.0001
 
@@ -25,7 +25,7 @@ program Teste
     call cpu_time(start)
 
     call HeliumAtom(r_range, Eigenvalue_range, SelfCons_int_max, KS_int_max,&
-    &Eigenvalue_tol, u0_tol, SelfCons_tol, Uniform, h, j_max, delta)
+    &Eigenvalue_tol, u0_tol, SelfCons_tol, Uniform_Numerov, h, j_max, delta)
 
     call cpu_time(finish)
     print *,"CPU time = ",finish-start,"s"

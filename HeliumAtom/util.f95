@@ -5,7 +5,7 @@ module util
 contains
 
     subroutine HydrogenAtom(r_range, Eigenvalue_range, KS_int_max,&
-    &Eigenvalue_tol, u0_tol, Uniform, h, j_max, delta)
+    &Eigenvalue_tol, u0_tol, Uniform_Numerov, h, j_max, delta)
 
         integer :: n, j_max, i, KS_int_max, AllocateStatus
         real (kind = 8) , parameter :: pi = 3.141592653589793
@@ -16,9 +16,9 @@ contains
 
         real (kind = 8), dimension(:), allocatable :: r, u, Potential, Potential_U
 
-        logical :: Uniform
+        logical, dimension(2) :: Uniform_Numerov
 
-        if (Uniform) then
+        if (Uniform_Numerov(1)) then
             n = int((r_range(2)-r_range(1))/h)
         else
             rp = r_range(2)/(exp(j_max*delta)-1)
@@ -30,19 +30,21 @@ contains
 
         ! Initializing radial coordinates and effective potential
         do i=1, n
-            if (Uniform) then
+
+            if (Uniform_Numerov(1)) then
                 r(i) = r_range(1) + h*i
             else
                 r(i) = rp*(exp(i*delta)-1)
             end if
+
             Potential(i) = -1/r(i)
         end do
 
         ! Solve Kohn-Sham
         call KohnSham1D(r, u, Potential, Eigenvalue_Range, Eigenvalue,&
-        &KS_int_max, Eigenvalue_tol, u0_tol, n, h, rp, delta, Uniform)
+        &KS_int_max, Eigenvalue_tol, u0_tol, n, h, rp, delta, Uniform_Numerov)
 
-        call Poisson(r, u, Potential_U, n, h, rp, delta, Uniform)
+        call Poisson(r, u, Potential_U, n, h, rp, delta, Uniform_Numerov)
 
         ! To plot u(r) and Potential U
         open(1, file='Hydrogen_u.dat', status='replace')
@@ -59,7 +61,7 @@ contains
     end subroutine HydrogenAtom
 
     subroutine HeliumAtom(r_range, Eigenvalue_range, SelfCons_int_max, KS_int_max,&
-    &Eigenvalue_tol, u0_tol, SelfCons_tol, Uniform, h, j_max, delta)
+    &Eigenvalue_tol, u0_tol, SelfCons_tol, Uniform_Numerov, h, j_max, delta)
 
         integer :: n, j_max, i, j, KS_int_max, SelfCons_int_max, AllocateStatus
         real (kind = 8) , parameter :: pi = 3.141592653589793
@@ -70,9 +72,9 @@ contains
 
         real (kind = 8), dimension(:), allocatable :: r, u, Ext_Potential, Hartree, Exchange, Potential_U, j_array
 
-        logical :: Uniform
+        logical, dimension(2) :: Uniform_Numerov
 
-        if (Uniform) then
+        if (Uniform_Numerov(1)) then
             n = int((r_range(2)-r_range(1))/h)
         else
             rp = r_range(2)/(exp(j_max*delta)-1)
@@ -87,7 +89,7 @@ contains
 
             j_array(i) = i
 
-            if (Uniform) then
+            if (Uniform_Numerov(1)) then
                 r(i) = r_range(1) + h*i
             else
                 r(i) = rp*(exp(i*delta)-1)
@@ -112,10 +114,10 @@ contains
             Eigenvalue_aux = Eigenvalue
 
             call KohnSham1D(r, u, Ext_Potential+Hartree+Exchange, E_Range_aux, Eigenvalue,&
-            &KS_int_max, Eigenvalue_tol, u0_tol, n, h, rp, delta, Uniform)
+            &KS_int_max, Eigenvalue_tol, u0_tol, n, h, rp, delta, Uniform_Numerov)
 
             if (abs(Eigenvalue-Eigenvalue_aux)>=SelfCons_tol) then
-                call Poisson(r, u, Potential_U, n, h, rp, delta, Uniform)
+                call Poisson(r, u, Potential_U, n, h, rp, delta, Uniform_Numerov)
 
                 Hartree = 2 * Potential_U / r
 
@@ -126,7 +128,7 @@ contains
 
         end do
 
-        if (Uniform) then
+        if (Uniform_Numerov(1)) then
             Energy = 2. * Eigenvalue - sum(Hartree*(u**2.)*h) - (1./2.)*sum(Exchange*(u**2.)*h)
         else
             Energy = 2. * Eigenvalue - rp*delta*sum(Hartree*(u**2.)*(exp(j_array*delta)-1))&
@@ -138,7 +140,7 @@ contains
     end subroutine HeliumAtom
 
     subroutine KohnSham1D(r, u, Potential, Eigenvalue_Range, EigenValue,&
-    &int_max, eigenvalue_tol, u0_tol, n, h, rp, delta, Uniform)
+    &int_max, eigenvalue_tol, u0_tol, n, h, rp, delta, Uniform_Numerov)
     ! Routine to solve a one dimentional Kohn-Sham (Schrödinger) equation.
     ! Parameters
     !   r: 1D array of coordinates to run by;
@@ -153,29 +155,47 @@ contains
     !   u: Radial wave function u(r) = r*\psi(r);
     !   EigenValue: Eigenvalue of function u(r) satisfying boundary conditions.
 
-        integer :: i, int_max, n !Dimension of Potential, u and r
-        real (kind = 8), dimension(n) :: Potential, u, r, du, Delta_r
+        integer :: i, j, int_max, n !Dimension of Potential, u and r
+        real (kind = 8), dimension(n) :: Potential, u, r, du, Delta_r, v, f
         real (kind =8), dimension(2) :: Eigenvalue_Range
         real (kind = 8) :: EigenValue, E_aux, eigenvalue_tol, u0_tol, h, rp, delta
-        logical :: Uniform
+        logical, dimension(2) :: Uniform_Numerov
 
         ! Initial wave function guess
+        !Uniform guess, using Numerov
         u(n) = r(n)*exp(-r(n))
-        u(n-1) = r(n-1)*exp(-r(n-1)) !Uniform guess, using Numerov
-        du(n) = (1 - r(n))*exp(-r(n))*rp*delta*exp(n*delta) !Non-uniform guess, using Runge-Kutta
-        u(1) = abs(2*u0_tol)
+        u(n-1) = r(n-1)*exp(-r(n-1))
+
+        !Non-uniform guess, using Runge-Kutta
+        du(n) = (1 - r(n))*exp(-r(n))*rp*delta*exp(n*delta)
+
+        !Non-uniform guess, using Numerov
+        v(n) = u(n)*exp(-n*delta/2)
+        v(n-1) = u(n-1)*exp(-(n-1)*delta/2)
 
         ! Main loop for finding the Kohn-Sham eigenvalue
         do i=1, int_max
 
             EigenValue = (Eigenvalue_Range(1) + Eigenvalue_Range(2))/2
 
-            if (Uniform) then
-                ! Integrating wave function via Numerov
+            if (Uniform_Numerov(1)) then ! Integrating wave function via Numerov
                 u = Numerov(u, -2*(EigenValue-Potential), h, n)
-            else
-                ! Integrating wave function via Runge-Kutta
+
+            else if (Uniform_Numerov(2)) then ! Non-uniform, integrating wave function via Numerov
+
+                do j=1, n
+                    f(j) = (delta**2)/4 - 2*(rp**2)*(delta**2)*exp(2*j*delta)*(EigenValue-Potential(j))
+                end do
+
+                v = Numerov(v, f, 1._8, n)
+
+                do j=2, n-1
+                    u(n-j) = v(n-j)*exp((n-j)*delta/2)
+                end do
+
+            else ! Non-uniform, integrating wave function via Runge-Kutta
                 u =  RungeKutta_KohnSham(u, du, -2*(EigenValue-Potential), rp**2*delta**2, delta, n)
+
             end if
 
             print *,"Eigen Value tested:", EigenValue
@@ -204,7 +224,7 @@ contains
 
 
         ! Normalizing u
-        if (Uniform) then
+        if (Uniform_Numerov(1)) then
             u = u/sqrt(sum(u*u*h))
         else
             do i=1, n-1
@@ -216,7 +236,7 @@ contains
 
     end subroutine KohnSham1D
 
-    subroutine Poisson(r, u, Potential_U, n, h, rp, delta, Uniform)
+    subroutine Poisson(r, u, Potential_U, n, h, rp, delta, Uniform_Numerov)
     ! Routine to solve a Poisson equation of radial potential Hartree potential.
     ! Parameters
     !   r: 1D array of coordinates to run by;
@@ -228,12 +248,12 @@ contains
         integer :: n, i
         real (kind = 8), dimension(n) :: r, u, Potential_U, dPotential_U
         real (kind = 8) :: h, rp, delta, a
-        logical :: Uniform
+        logical, dimension(2) :: Uniform_Numerov
 
         ! Boundary condition at r=0 and first guess
         Potential_U(1) = r(1)
 
-        if (Uniform) then
+        if (Uniform_Numerov(1)) then
             Potential_U(2) = r(2)
             Potential_U = Verlet(Potential_U, -u**2/r, h, n) ! Integrating Potential U via Verlet
         else
