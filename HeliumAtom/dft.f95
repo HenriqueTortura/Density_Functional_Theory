@@ -1,4 +1,4 @@
-module util
+module dft
 
     implicit none
 
@@ -268,7 +268,6 @@ contains
 
     end subroutine Poisson
 
-!! Fooling around
     subroutine KohnShamSweep(r, u, Potential, h, Eigenvalues, u0s)
 
         integer i
@@ -410,4 +409,4 @@ contains
 
     end function RungeKutta_Poisson
 
-end module util
+end module dft

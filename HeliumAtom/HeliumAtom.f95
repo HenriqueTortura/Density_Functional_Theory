@@ -1,6 +1,6 @@
 program Teste
 
-    use util
+    use dft
 
     implicit none
 
@@ -11,7 +11,7 @@ program Teste
 
     real (kind = 8), parameter :: Eigenvalue_tol = 0.001, u0_tol = 0.001, SelfCons_tol = 0.001
 
-    logical, dimension(2), parameter :: Uniform_Numerov = (/ .FALSE., .FALSE./)
+    logical, dimension(2), parameter :: Uniform_Numerov = (/ .TRUE., .FALSE./)
 
     real (kind = 8), parameter :: h = 0.0001
 

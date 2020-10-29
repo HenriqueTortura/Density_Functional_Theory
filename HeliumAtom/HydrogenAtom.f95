@@ -1,6 +1,6 @@
 program Hydrogen
 
-    use util
+    use dft
 
     implicit none
 
@@ -11,15 +11,23 @@ program Hydrogen
 
     real (kind = 8) , parameter :: eigenvalue_tol = 0.00001, u0_tol= 0.001
 
-    logical, dimension(2), parameter :: Uniform_Numerov = (/ .FALSE., .TRUE./)
+    logical, dimension(2), parameter :: Uniform_Numerov = (/ .TRUE., .FALSE./)
 
     real (kind = 8), parameter :: h = 0.0001
 
     integer, parameter :: j_max = 200000
     real (kind = 8), parameter :: delta = 0.0001
 
+    real :: start, finish
 
-    call HydrogenAtom(r_range, Eigenvalue_range, KS_int_max, Eigenvalue_tol, u0_tol, Uniform_Numerov, h, j_max, delta)
+    !---------------------------------------------------------------------------------------!
 
+    call cpu_time(start)
+
+    call HydrogenAtom(r_range, Eigenvalue_range, KS_int_max, Eigenvalue_tol, u0_tol,&
+    &Uniform_Numerov, h, j_max, delta)
+
+    call cpu_time(finish)
+    print *,"CPU time = ",finish-start,"s"
 
 end program
