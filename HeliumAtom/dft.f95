@@ -44,6 +44,19 @@ contains
         call KohnSham1D(r, u, Potential, Eigenvalue_Range, Eigenvalue,&
         &KS_int_max, Eigenvalue_tol, u0_tol, n, h, rp, delta, Uniform_Numerov)
 
+        print *,"Eigenvalue absolute true error: ", abs(-0.5-Eigenvalue)
+        print *,"**********"
+
+        if (Uniform_Numerov(1)) then ! Integrating wave function via Numerov
+            print *,"Method convergence error (h^4): ", h**4
+
+        else if (Uniform_Numerov(2)) then ! Non-uniform, integrating wave function via Numerov
+            print *,"1/N^4: ", 1/(dble(n)**4)
+
+        else ! Non-uniform, integrating wave function via Runge-Kutta
+
+        end if
+
         call Poisson(r, u, Potential_U, n, h, rp, delta, Uniform_Numerov)
 
         ! To plot u(r) and Potential U
@@ -131,16 +144,20 @@ contains
         if (Uniform_Numerov(1)) then
             Energy = 2. * Eigenvalue - sum(Hartree*(u**2.)*h) - (1./2.)*sum(Exchange*(u**2.)*h)
         else
-            Energy = 2. * Eigenvalue - rp*delta*sum(Hartree*(u**2.)*(exp(j_array*delta)-1))&
-            & - rp*delta*(1./2.)*sum(Exchange*(u**2.)*(exp(j_array*delta)-1))
+            Energy = 2. * Eigenvalue - rp*delta*sum(Hartree*(u**2.)*exp(j_array*delta))&
+            & - rp*delta*(1./2.)*sum(Exchange*(u**2.)*exp(j_array*delta))
         end if
 
+        print *,"Eigenvalue absolute true error: ", abs(-0.52-Eigenvalue)
+        print *,"**********"
         print *,"Energy: ",Energy
+        print *,"Energy absolute true error: ", abs(-2.72-Energy)
+        print *,"**********"
 
     end subroutine HeliumAtom
 
     subroutine KohnSham1D(r, u, Potential, Eigenvalue_Range, EigenValue,&
-    &int_max, eigenvalue_tol, u0_tol, n, h, rp, delta, Uniform_Numerov)
+    &KS_int_max, eigenvalue_tol, u0_tol, n, h, rp, delta, Uniform_Numerov)
     ! Routine to solve a one dimentional Kohn-Sham (Schrödinger) equation.
     ! Parameters
     !   r: 1D array of coordinates to run by;
@@ -155,7 +172,7 @@ contains
     !   u: Radial wave function u(r) = r*\psi(r);
     !   EigenValue: Eigenvalue of function u(r) satisfying boundary conditions.
 
-        integer :: i, j, int_max, n !Dimension of Potential, u and r
+        integer :: i, j, KS_int_max, n !Dimension of Potential, u and r
         real (kind = 8), dimension(n) :: Potential, u, r, du, Delta_r, v, f
         real (kind =8), dimension(2) :: Eigenvalue_Range
         real (kind = 8) :: EigenValue, E_aux, eigenvalue_tol, u0_tol, h, rp, delta
@@ -174,7 +191,7 @@ contains
         v(n-1) = u(n-1)*exp(-(n-1)*delta/2)
 
         ! Main loop for finding the Kohn-Sham eigenvalue
-        do i=1, int_max
+        do i=1, KS_int_max
 
             EigenValue = (Eigenvalue_Range(1) + Eigenvalue_Range(2))/2
 
@@ -219,7 +236,7 @@ contains
         if ((abs(u(1))<u0_tol .and. abs(EigenValue-Eigenvalue_Range(1))<eigenvalue_tol)) then
             print *,"Converged for eigenvalue: ", EigenValue
         else
-            print *, "Did not conveged within ", (i-1), " iterations"
+            print *,"Did not conveged within ", (i-1), " iterations"
         end if
 
 
@@ -263,7 +280,7 @@ contains
         end if
 
         ! Satisfaying boundary condition at r_max by adding term a*r
-        a = (1 - Potential_U(size(Potential_U))) / r(size(r))
+        a = (1 - Potential_U(n)) / r(n)
         Potential_U = Potential_U + a*r
 
     end subroutine Poisson
@@ -286,8 +303,8 @@ contains
         u(n-1) = r(n-1)*exp(-r(n-1))
 
         ! Main loop for finding the Kohn-Sham eigenvalue
-        do while (i <= n_eigenvalues)
-
+        do i=1, n_eigenvalues
+            print *,i,'/',n_eigenvalues
             ! Integrating wave function via Numerov
             u = Numerov(u, -2*(Eigenvalues(i)-Potential), h, n)
 
@@ -298,8 +315,6 @@ contains
             !print *,"Eigen Value tested:", Eigenvalues(i)
             !print *,"Boundary term:", u(1)
             !print *,"*-----------------------*"
-
-            i = i + 1
 
         end do
 

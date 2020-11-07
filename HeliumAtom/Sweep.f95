@@ -1,6 +1,6 @@
 program Sweep
 
-    use util
+    use dft
 
     implicit none
 
