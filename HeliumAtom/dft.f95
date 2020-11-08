@@ -11,8 +11,7 @@ contains
         real (kind = 8) , parameter :: pi = 3.141592653589793
 
         real (kind = 8), dimension(2) :: r_range, Eigenvalue_Range
-        real (kind = 8)  :: Eigenvalue, Eigenvalue_aux, Energy,&
-        &Eigenvalue_tol, u0_tol, h, delta, rp
+        real (kind = 8)  :: Eigenvalue, Eigenvalue_tol, u0_tol, h, delta, rp
 
         real (kind = 8), dimension(:), allocatable :: r, u, Potential, Potential_U
 
@@ -79,7 +78,7 @@ contains
     subroutine HeliumAtom(r_range, Eigenvalue_range, SelfCons_int_max, KS_int_max,&
     &Eigenvalue_tol, u0_tol, SelfCons_tol, Uniform_Numerov, h, j_max, delta)
 
-        integer :: n, j_max, i, j, KS_int_max, SelfCons_int_max, AllocateStatus
+        integer :: n, j_max, i, KS_int_max, SelfCons_int_max, AllocateStatus
         real (kind = 8) , parameter :: pi = 3.141592653589793
 
         real (kind = 8), dimension(2) :: r_range, Eigenvalue_Range, E_Range_aux
@@ -176,7 +175,7 @@ contains
         integer :: i, j, KS_int_max, n !Dimension of Potential, u and r
         real (kind = 8), dimension(n) :: Potential, u, r, du, Delta_r, v, f
         real (kind =8), dimension(2) :: Eigenvalue_Range
-        real (kind = 8) :: EigenValue, E_aux, eigenvalue_tol, u0_tol, h, rp, delta
+        real (kind = 8) :: EigenValue, eigenvalue_tol, u0_tol, h, rp, delta
         logical, dimension(2) :: Uniform_Numerov
 
         ! Initial wave function guess
@@ -263,7 +262,7 @@ contains
     ! Returns
     !   Potential_U: U radial function, related with Hartree Potential by Hartree = r*U(r).
 
-        integer :: n, i
+        integer :: n
         real (kind = 8), dimension(n) :: r, u, Potential_U, dPotential_U
         real (kind = 8) :: h, rp, delta, a
         logical, dimension(2) :: Uniform_Numerov
@@ -399,7 +398,7 @@ contains
 
     function  RungeKutta_Poisson(u, du, f, cte, delta, n)
 
-        integer :: i, j, n
+        integer :: i, n
         real (kind = 8) :: k0, k1, k2, k3, l0, l1, l2, l3, cte, delta
         real (kind = 8), dimension(n) :: u, du, f, RungeKutta_Poisson
 
