@@ -13,10 +13,12 @@ program Hydrogen
 
     logical, dimension(2), parameter :: Uniform_Numerov = (/ .FALSE., .TRUE./)
 
-    real (kind = 8), parameter :: h = 0.000001
+    real (kind = 8), parameter :: h = 0.0001
 
-    integer, parameter :: j_max = 200000
+    integer, parameter :: j_max = 1000
     real (kind = 8), parameter :: delta = 0.0001
+
+    logical, parameter :: write_data = .FALSE.
 
     real :: start, finish
 
@@ -25,7 +27,7 @@ program Hydrogen
     call cpu_time(start)
 
     call HydrogenAtom(r_range, Eigenvalue_range, KS_int_max, Eigenvalue_tol, u0_tol,&
-    &Uniform_Numerov, h, j_max, delta)
+    &Uniform_Numerov, h, j_max, delta, write_data)
 
     call cpu_time(finish)
     print *,"CPU time = ",finish-start,"s"

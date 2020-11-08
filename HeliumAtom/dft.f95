@@ -5,7 +5,7 @@ module dft
 contains
 
     subroutine HydrogenAtom(r_range, Eigenvalue_range, KS_int_max,&
-    &Eigenvalue_tol, u0_tol, Uniform_Numerov, h, j_max, delta)
+    &Eigenvalue_tol, u0_tol, Uniform_Numerov, h, j_max, delta, write_data)
 
         integer :: n, j_max, i, KS_int_max, AllocateStatus
         real (kind = 8) , parameter :: pi = 3.141592653589793
@@ -17,6 +17,7 @@ contains
         real (kind = 8), dimension(:), allocatable :: r, u, Potential, Potential_U
 
         logical, dimension(2) :: Uniform_Numerov
+        logical :: write_data
 
         if (Uniform_Numerov(1)) then
             n = int((r_range(2)-r_range(1))/h)
@@ -60,16 +61,18 @@ contains
         call Poisson(r, u, Potential_U, n, h, rp, delta, Uniform_Numerov)
 
         ! To plot u(r) and Potential U
-        open(1, file='Hydrogen_u.dat', status='replace')
-            do i=1, n
-                write(1,*) r(i), u(i)
-            end do
-        close(1)
-        open(2, file='Hydrogen_Potential_U.dat', status='replace')
-            do i=1, n
-                write(2,*) r(i), Potential_U(i)
-            end do
-        close(2)
+        if (write_data) then
+            open(1, file='Hydrogen_u.dat', status='replace')
+                do i=1, n
+                    write(1,*) r(i), u(i)
+                end do
+            close(1)
+            open(2, file='Hydrogen_Potential_U.dat', status='replace')
+                do i=1, n
+                    write(2,*) r(i), Potential_U(i)
+                end do
+            close(2)
+        end if
 
     end subroutine HydrogenAtom
 
@@ -99,7 +102,6 @@ contains
 
         ! Initializing radial coordinates and potentials
         do i=1, n
-
             j_array(i) = i
 
             if (Uniform_Numerov(1)) then
@@ -111,7 +113,6 @@ contains
             Ext_Potential(i) = -2/r(i)
             Hartree(i) = 0
             Exchange(i) = 0
-
         end do
 
         Eigenvalue_aux = 0
