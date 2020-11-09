@@ -1,5 +1,5 @@
 subroutine HydrogenAtom(r_range, Eigenvalue_range, KS_int_max,&
-&Eigenvalue_tol, u0_tol, Uniform_Numerov, h, j_max, delta, write_data, erro)
+&Eigenvalue_tol, u0_tol, Uniform_Numerov, h, j_max, delta, write_data, u0)
 
     integer, intent(in) :: j_max, KS_int_max
     integer :: n,  i, AllocateStatus
@@ -9,7 +9,7 @@ subroutine HydrogenAtom(r_range, Eigenvalue_range, KS_int_max,&
     real (kind = 8), intent(in) ::  Eigenvalue_tol, u0_tol, h, delta
     real (kind = 8) :: Eigenvalue, rp
 
-    real (kind = 8), intent(out) :: erro
+    real (kind = 8), intent(out) :: u0
 
     real (kind = 8), dimension(:), allocatable :: r, u, Potential, Potential_U
 
@@ -42,7 +42,7 @@ subroutine HydrogenAtom(r_range, Eigenvalue_range, KS_int_max,&
     call KohnSham1D(r, u, Potential, Eigenvalue_Range, Eigenvalue,&
     &KS_int_max, Eigenvalue_tol, u0_tol, n, h, rp, delta, Uniform_Numerov)
 
-    erro = u(1)
+    u0 = u(1)
 
     call Poisson(r, u, Potential_U, n, h, rp, delta, Uniform_Numerov)
 
@@ -61,6 +61,87 @@ subroutine HydrogenAtom(r_range, Eigenvalue_range, KS_int_max,&
     end if
 
 end subroutine HydrogenAtom
+
+subroutine HeliumAtom(r_range, Eigenvalue_range, SelfCons_int_max, KS_int_max,&
+&Eigenvalue_tol, u0_tol, SelfCons_tol, Uniform_Numerov, h, j_max, delta)
+
+    integer :: n, j_max, i, KS_int_max, SelfCons_int_max, AllocateStatus
+    real (kind = 8) , parameter :: pi = 3.141592653589793
+
+    real (kind = 8), dimension(2) :: r_range, Eigenvalue_Range, E_Range_aux
+    real (kind = 8)  :: Eigenvalue, Eigenvalue_aux, Energy,&
+    &Eigenvalue_tol, u0_tol, SelfCons_tol, h, delta, rp
+
+    real (kind = 8), dimension(:), allocatable :: r, u, Ext_Potential, Hartree, Exchange, Potential_U, j_array
+
+    logical, dimension(2) :: Uniform_Numerov
+
+    if (Uniform_Numerov(1)) then
+        n = int((r_range(2)-r_range(1))/h)
+    else
+        rp = r_range(2)/(exp(j_max*delta)-1)
+        n = j_max
+    end if
+
+    allocate(r(n), u(n), Ext_Potential(n), Hartree(n), Exchange(n), Potential_U(n), j_array(N), stat = AllocateStatus)
+    if (AllocateStatus /= 0) stop "*** Not enough memory ***"
+
+    ! Initializing radial coordinates and potentials
+    do i=1, n
+        j_array(i) = i
+
+        if (Uniform_Numerov(1)) then
+            r(i) = r_range(1) + h*i
+        else
+            r(i) = rp*(exp(i*delta)-1)
+        end if
+
+        Ext_Potential(i) = -2/r(i)
+        Hartree(i) = 0
+        Exchange(i) = 0
+    end do
+
+    Eigenvalue_aux = 0
+    Eigenvalue = Eigenvalue_aux + 2*SelfCons_tol
+
+    do i=1, SelfCons_int_max
+
+        print *,'**************************'
+        print *,'**************************'
+        print *,"Iteration: ",i
+
+        E_Range_aux = Eigenvalue_Range
+        Eigenvalue_aux = Eigenvalue
+
+        call KohnSham1D(r, u, Ext_Potential+Hartree+Exchange, E_Range_aux, Eigenvalue,&
+        &KS_int_max, Eigenvalue_tol, u0_tol, n, h, rp, delta, Uniform_Numerov)
+
+        if (abs(Eigenvalue-Eigenvalue_aux)>=SelfCons_tol) then
+            call Poisson(r, u, Potential_U, n, h, rp, delta, Uniform_Numerov)
+
+            Hartree = 2 * Potential_U / r
+
+            Exchange = -((3./2.)*(u/(pi * r))**2.)**(1.0/3.0)
+        else
+            exit
+        end if
+
+    end do
+
+    if (Uniform_Numerov(1)) then
+        Energy = 2. * Eigenvalue - sum(Hartree*(u**2.)*h) - (1./2.)*sum(Exchange*(u**2.)*h)
+    else
+        Energy = 2. * Eigenvalue - rp*delta*sum(Hartree*(u**2.)*exp(j_array*delta))&
+        & - rp*delta*(1./2.)*sum(Exchange*(u**2.)*exp(j_array*delta))
+    end if
+
+    print *,"Eigenvalue absolute true error: ", abs(-0.52-Eigenvalue)
+    print *,"**********"
+    print *,"Energy: ",Energy
+    print *,"Energy absolute true error: ", abs(-2.72-Energy)
+    print *,"**********"
+
+end subroutine HeliumAtom
 
 subroutine KohnSham1D(r, u, Potential, Eigenvalue_Range, EigenValue,&
 &KS_int_max, eigenvalue_tol, u0_tol, n, h, rp, delta, Uniform_Numerov)
@@ -233,6 +314,7 @@ subroutine Poisson(r, u, Potential_U, n, h, rp, delta, Uniform_Numerov)
     ! Satisfaying boundary condition at r_max by adding term a*r
     a = (1 - Potential_U(n)) / r(n)
     Potential_U = Potential_U + a*r
+
 contains
 
     function Verlet(Potential_U, F, h, n)

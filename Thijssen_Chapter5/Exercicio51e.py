@@ -5,9 +5,13 @@ import sys, os
 
 # Change path according to your machine
 sys.path.append('/home/lordemomo/Documentos/Density_Functional_Theory/Thijssen_Chapter5/')
-import pydft
-print(pydft.hydrogenatom.__doc__) # Currently only done to Hydrogen
 
+# Use on terminal to create pydft module: $f2py -c -m pydft pydft.f95
+import pydft
+print(pydft.__doc__)
+print(pydft.hydrogenatom.__doc__)
+
+#%%
 def func(x, a, b, c):
     return a/(x**c) + b
 
