@@ -15,7 +15,7 @@ program Hydrogen
 
     real (kind = 8), parameter :: h = 0.0001
 
-    integer, parameter :: j_max = 1000
+    integer, parameter :: j_max = 500000
     real (kind = 8), parameter :: delta = 0.0001
 
     logical, parameter :: write_data = .FALSE.

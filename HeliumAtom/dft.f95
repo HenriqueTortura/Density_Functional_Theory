@@ -13,7 +13,7 @@ contains
         real (kind = 8), dimension(2) :: r_range, Eigenvalue_Range
         real (kind = 8)  :: Eigenvalue, Eigenvalue_tol, u0_tol, h, delta, rp
 
-        real (kind = 8), dimension(:), allocatable :: r, u, Potential, Potential_U
+        real (kind = 8), dimension(:), allocatable :: r, u, Ext_Potential, Potential_U
 
         logical, dimension(2) :: Uniform_Numerov
         logical :: write_data
@@ -25,7 +25,7 @@ contains
             n = j_max
         end if
 
-        allocate(r(n), u(n), Potential(n), Potential_U(n), stat = AllocateStatus)
+        allocate(r(n), u(n), Ext_Potential(n), Potential_U(n), stat = AllocateStatus)
         if (AllocateStatus /= 0) stop "*** Not enough memory ***"
 
         ! Initializing radial coordinates and effective potential
@@ -37,25 +37,15 @@ contains
                 r(i) = rp*(exp(i*delta)-1)
             end if
 
-            Potential(i) = -1/r(i)
+            Ext_Potential(i) = -1/r(i)
         end do
 
         ! Solve Kohn-Sham
-        call KohnSham1D(r, u, Potential, Eigenvalue_Range, Eigenvalue,&
+        call KohnSham1D(r, u, Ext_Potential, Eigenvalue_Range, Eigenvalue,&
         &KS_int_max, Eigenvalue_tol, u0_tol, n, h, rp, delta, Uniform_Numerov)
 
         print *,"Eigenvalue absolute true error: ", abs(-0.5-Eigenvalue)
         print *,"**********"
-
-        if (Uniform_Numerov(1)) then ! Integrating wave function via Numerov
-            print *,"Method convergence error (h^4): ", h**4
-
-        else if (Uniform_Numerov(2)) then ! Non-uniform, integrating wave function via Numerov
-            print *,"1/N^4: ", 1/(dble(n)**4)
-
-        else ! Non-uniform, integrating wave function via Runge-Kutta
-
-        end if
 
         call Poisson(r, u, Potential_U, n, h, rp, delta, Uniform_Numerov)
 
@@ -367,7 +357,7 @@ contains
 
     end function Verlet
 
-    function  RungeKutta_KohnSham(u, du, f, cte, delta, n)
+    function RungeKutta_KohnSham(u, du, f, cte, delta, n)
 
         integer :: i, j, n
         real (kind = 8) :: k0, k1, k2, k3, l0, l1, l2, l3, cte, delta
@@ -396,7 +386,7 @@ contains
 
     end function RungeKutta_KohnSham
 
-    function  RungeKutta_Poisson(u, du, f, cte, delta, n)
+    function RungeKutta_Poisson(u, du, f, cte, delta, n)
 
         integer :: i, n
         real (kind = 8) :: k0, k1, k2, k3, l0, l1, l2, l3, cte, delta
