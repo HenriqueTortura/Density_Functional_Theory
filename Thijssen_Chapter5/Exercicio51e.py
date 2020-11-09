@@ -3,14 +3,15 @@ from scipy.optimize import curve_fit
 from matplotlib import pyplot as plt
 import sys, os
 
-sys.path.append('/home/lordemomo/Documentos/Density_Functional_Theory/HeliumAtom/')
+# Change path according to your machine
+sys.path.append('/home/lordemomo/Documentos/Density_Functional_Theory/Thijssen_Chapter5/')
 import pydft
-print(pydft.hydrogenatom.__doc__)
+print(pydft.hydrogenatom.__doc__) # Currently only done to Hydrogen
 
 def func(x, a, b, c):
     return a/(x**c) + b
 
-
+# Parameters
 r_range = [0, 20]
 Eigenvalue_range = [-1, 0.]
 
@@ -41,12 +42,10 @@ for i in range(0,int(np.size(u0))):
 #%% Fitting
 popt, pcov = curve_fit(func, j_max, u0)
 
-
 #%%
 plt.figure(figsize=(16,9))
 plt.title('Termo de fronteira $u_0$ vs $N$', fontsize=20)
 plt.plot(j_max, u0, label='Calculado', linewidth=4)
-# plt.plot(j_max, 1/(j_max), label='$1/N^4$', linewidth=4)
 plt.plot(j_max, func(j_max, *popt), '-.', color='r',
           label='fit: a=%5.3f, b=%5.3f, c=%5.3f' % tuple(popt), linewidth = 4)
 plt.xlabel('$N=j_{max}$', fontsize=18)
@@ -57,5 +56,5 @@ plt.xlim(j_max[0],j_max[-1])
 plt.xscale('log')
 plt.legend(loc='best', fontsize=14)
 plt.grid()
-plt.savefig('/home/lordemomo/Documentos/Density_Functional_Theory/HeliumAtom/img/u0vsN.png', dpi=200, bbox_inches='tight')
+plt.savefig('/home/lordemomo/Documentos/Density_Functional_Theory/Thijssen_Chapter5/img/u0vsN.png', dpi=200, bbox_inches='tight')
 
