@@ -1,7 +1,7 @@
 # Density Functional Theory in Simple Systems
 
 ## Build Instructions
-Compile main module for Fortran (in my case, f95 calls GNU Fortran)
+Compile main module for Fortran (in my case, f95 calls for GNU Fortran)
 ```bash
 f95 -c dft.f95
 ```
