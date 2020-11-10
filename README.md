@@ -22,7 +22,7 @@ Sweep hydrogen eigenvalues
 f95 -o Sweep Sweep.f95 dft.o
 ./Sweep
 ```
-Make hydrogen plots with `Plotting.py` and evaluate Numerov's method error (Exercise 5.1-e)[[1]](#1) with `51e.py`.
+Make hydrogen plots with `Plotting.py` (make sure HydrogenAtom.f95 ran with parameter `write_data = .TRUE.` or get necessary files from the repository) and evaluate Numerov's method error (Exercise 5.1-e)[[1]](#1) with `51e.py`.
 
 ## References
 <a id="1">[1]</a> 
