@@ -4,8 +4,8 @@ from matplotlib import pyplot as plt
 # Change path according to your machine
 path = '/home/lordemomo/Documentos/Density_Functional_Theory/Thijssen_Chapter5/'
 
-plot_Hydrogen_Wave_and_Potential = 0
-plot_Sweep_Hydrogen = 0
+plot_Hydrogen_Wave_and_Potential = 1
+plot_Sweep_Hydrogen = 1
 
 #%% Wave function and Potential
 if plot_Hydrogen_Wave_and_Potential:
