@@ -1,4 +1,4 @@
-# Density Functional Theory in Simple Systems
+# Density Functional Theory
 
 ## Build Instructions
 Compile main module for Fortran (in my case, f95 calls for GNU Fortran)
