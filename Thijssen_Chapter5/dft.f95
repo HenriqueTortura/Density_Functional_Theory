@@ -5,18 +5,19 @@ module dft
 contains
 
     subroutine HydrogenAtom(r_range, Eigenvalue_range, KS_int_max,&
-    &Eigenvalue_tol, u0_tol, Uniform_Numerov, h, j_max, delta, write_data)
+    &Eigenvalue_tol, u0_tol, Uniform_Numerov, h, j_max, delta, write_data, ExchangeComparison)
 
         integer :: n, j_max, i, KS_int_max, AllocateStatus
         real (kind = 8) , parameter :: pi = 3.141592653589793
 
         real (kind = 8), dimension(2) :: r_range, Eigenvalue_Range
-        real (kind = 8)  :: Eigenvalue, Eigenvalue_tol, u0_tol, h, delta, rp
+        real (kind = 8)  :: Eigenvalue, Eigenvalue_tol, u0_tol, h, delta, rp, ExHartree_ratio
 
-        real (kind = 8), dimension(:), allocatable :: r, u, Ext_Potential, Potential_U
+        real (kind = 8), dimension(:), allocatable :: r, u, Ext_Potential, Potential_U, j_array,&
+        & Hartree, Exchange
 
         logical, dimension(2) :: Uniform_Numerov
-        logical :: write_data
+        logical :: write_data, ExchangeComparison
 
         if (Uniform_Numerov(1)) then
             n = int((r_range(2)-r_range(1))/h)
@@ -25,11 +26,12 @@ contains
             n = j_max
         end if
 
-        allocate(r(n), u(n), Ext_Potential(n), Potential_U(n), stat = AllocateStatus)
+        allocate(r(n), u(n), Ext_Potential(n), Potential_U(n), j_array(n), stat = AllocateStatus)
         if (AllocateStatus /= 0) stop "*** Not enough memory ***"
 
         ! Initializing radial coordinates and effective potential
         do i=1, n
+            j_array(i) = i
 
             if (Uniform_Numerov(1)) then
                 r(i) = r_range(1) + h*i
@@ -63,6 +65,22 @@ contains
             close(2)
         end if
 
+        if (ExchangeComparison) then
+            Hartree = Potential_U / r
+            Exchange = -((3./2.)*(u/(pi * r))**2.)**(1.0/3.0)
+
+            if (Uniform_Numerov(1)) then
+                ExHartree_ratio = (sum(Exchange*(u**2.)*h))&
+                &/ (sum(Hartree*(u**2.)*h))
+            else
+                ExHartree_ratio = (rp*delta*sum(Exchange*(u**2.)*exp(j_array*delta)))&
+                &/ (rp*delta*sum(Hartree*(u**2.)*exp(j_array*delta)))
+            end if
+
+            print *, 'Exchange correlation over Hartree energies: ', ExHartree_ratio
+
+        end if
+
     end subroutine HydrogenAtom
 
     subroutine HeliumAtom(r_range, Eigenvalue_range, SelfCons_int_max, KS_int_max,&
@@ -86,7 +104,7 @@ contains
             n = j_max
         end if
 
-        allocate(r(n), u(n), Ext_Potential(n), Hartree(n), Exchange(n), Potential_U(n), j_array(N), stat = AllocateStatus)
+        allocate(r(n), u(n), Ext_Potential(n), Hartree(n), Exchange(n), Potential_U(n), j_array(n), stat = AllocateStatus)
         if (AllocateStatus /= 0) stop "*** Not enough memory ***"
 
         ! Initializing radial coordinates and potentials
