@@ -26,7 +26,8 @@ contains
             n = j_max
         end if
 
-        allocate(r(n), u(n), Ext_Potential(n), Potential_U(n), j_array(n), stat = AllocateStatus)
+        allocate(r(n), u(n), Ext_Potential(n), Potential_U(n), j_array(n), Hartree(n),&
+        &Exchange(n), stat = AllocateStatus)
         if (AllocateStatus /= 0) stop "*** Not enough memory ***"
 
         ! Initializing radial coordinates and effective potential
@@ -70,14 +71,14 @@ contains
             Exchange = -((3./2.)*(u/(pi * r))**2.)**(1.0/3.0)
 
             if (Uniform_Numerov(1)) then
-                ExHartree_ratio = (sum(Exchange*(u**2.)*h))&
-                &/ (sum(Hartree*(u**2.)*h))
+                ExHartree_ratio = (-(1./4.)*sum(Exchange*(u**2.)*h)) / (-sum(Hartree*(u**2.)*h))
             else
-                ExHartree_ratio = (rp*delta*sum(Exchange*(u**2.)*exp(j_array*delta)))&
-                &/ (rp*delta*sum(Hartree*(u**2.)*exp(j_array*delta)))
+                ExHartree_ratio = (-rp*delta*(1./4.)*sum(Exchange*(u**2.)*exp(j_array*delta))) &
+                &/ (-rp*delta*sum(Hartree*(u**2.)*exp(j_array*delta)))
             end if
 
-            print *, 'Exchange correlation over Hartree energies: ', ExHartree_ratio
+            print *, 'Exchange correlation energy over Hartree energy (abs): ',&
+            &abs(ExHartree_ratio)
 
         end if
 
