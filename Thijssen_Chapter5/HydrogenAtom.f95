@@ -5,17 +5,17 @@ program Hydrogen
     implicit none
 
     ! Setting main parameters
-    real (kind = 8), dimension(2) :: r_range = (/ 0., 50./), Eigenvalue_range = (/-5., 0./)
+    real (kind = 8), dimension(2) :: r_range = (/ 0., 20./), Eigenvalue_range = (/-5., 0./)
 
     integer, parameter :: KS_int_max = 100
 
     real (kind = 8) , parameter :: Eigenvalue_tol = 0.00001, u0_tol= 0.001
 
-    logical, dimension(2), parameter :: Uniform_Numerov = (/ .TRUE., .FALSE./)
+    logical, dimension(2), parameter :: Uniform_Numerov = (/ .FALSE., .TRUE./)
 
     real (kind = 8), parameter :: h = 0.0001
 
-    integer, parameter :: j_max = 500000
+    integer, parameter :: j_max = 200000
     real (kind = 8), parameter :: delta = 0.0001
 
     logical, parameter :: write_data = .FALSE., ExchangeComparison = .TRUE.

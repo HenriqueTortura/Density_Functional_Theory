@@ -68,18 +68,19 @@ contains
 
         if (ExchangeComparison) then
             Hartree = Potential_U / r
-            Exchange = -((3./2.)*(u/(pi * r))**2.)**(1.0/3.0)
+            Exchange = -((3./4.)*(u/(pi * r))**2.)**(1.0/3.0)
 
             if (Uniform_Numerov(1)) then
-                ExHartree_ratio = (-(1./4.)*sum(Exchange*(u**2.)*h)) / (-sum(Hartree*(u**2.)*h))
+                ExHartree_ratio = (-(1./4.)*sum(Exchange*(u**2.)*h)) / (-(1./2.)*sum(Hartree*(u**2.)*h))
+                print *, 'Hartree energy: ', (-(1./2.)*sum(Hartree*(u**2.)*h))
             else
                 ExHartree_ratio = (-rp*delta*(1./4.)*sum(Exchange*(u**2.)*exp(j_array*delta))) &
-                &/ (-rp*delta*sum(Hartree*(u**2.)*exp(j_array*delta)))
+                &/ (-rp*delta*(1./2.)*sum(Hartree*(u**2.)*exp(j_array*delta)))
+                print *, 'Hartree energy: ', (-rp*delta*(1./2.)*sum(Hartree*(u**2.)*exp(j_array*delta)))
             end if
 
             print *, 'Exchange correlation energy over Hartree energy (abs): ',&
-            &abs(ExHartree_ratio)
-
+            &ExHartree_ratio
         end if
 
     end subroutine HydrogenAtom
