@@ -22,12 +22,14 @@ program Hydrogen
 
     real :: start, finish
 
+    real (kind = 8) :: u0
+
     !---------------------------------------------------------------------------------------!
 
     call cpu_time(start)
 
     call HydrogenAtom(r_range, Eigenvalue_range, KS_int_max, Eigenvalue_tol, u0_tol,&
-    &Uniform_Numerov, h, j_max, delta, write_data)
+    &Uniform_Numerov, h, j_max, delta, write_data, u0)
 
     call cpu_time(finish)
     print *,"CPU time = ",finish-start,"s"

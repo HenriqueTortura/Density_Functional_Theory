@@ -9,7 +9,6 @@ sys.path.append('/home/lordemomo/Documentos/Density_Functional_Theory/Thijssen_C
 # Use on terminal to create pydft module: $f2py -c -m pydft pydft.f95
 import pydft
 print(pydft.__doc__)
-print(pydft.hydrogenatom.__doc__)
 
 #%%
 def func(x, a, b, c):
@@ -40,7 +39,7 @@ u0 = np.zeros(np.size(j_max))
 for i in range(0,int(np.size(u0))):
     print(i)
     print(delta[i]*j_max[i])
-    u0[i] = np.abs(pydft.hydrogenatom(r_range, Eigenvalue_range, KS_int_max, Eigenvalue_tol, u0_tol,
+    u0[i] = np.abs(pydft.dft.hydrogenatom(r_range, Eigenvalue_range, KS_int_max, Eigenvalue_tol, u0_tol,
                   Uniform_Numerov, h, j_max[i], delta[i], write_data))
 
 #%% Fitting

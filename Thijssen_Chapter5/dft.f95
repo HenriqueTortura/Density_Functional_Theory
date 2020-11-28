@@ -5,18 +5,22 @@ module dft
 contains
 
     subroutine HydrogenAtom(r_range, Eigenvalue_range, KS_int_max,&
-    &Eigenvalue_tol, u0_tol, Uniform_Numerov, h, j_max, delta, write_data)
+    &Eigenvalue_tol, u0_tol, Uniform_Numerov, h, j_max, delta, write_data, u0)
 
-        integer :: n, j_max, i, KS_int_max, AllocateStatus
+        integer, intent(in) :: j_max, KS_int_max
+        integer :: n,  i, AllocateStatus
         real (kind = 8) , parameter :: pi = 3.141592653589793
 
-        real (kind = 8), dimension(2) :: r_range, Eigenvalue_Range
-        real (kind = 8)  :: Eigenvalue, Eigenvalue_tol, u0_tol, h, delta, rp
+        real (kind = 8), intent(in), dimension(2) :: r_range, Eigenvalue_Range
+        real (kind = 8), intent(in) ::  Eigenvalue_tol, u0_tol, h, delta
+        real (kind = 8) :: Eigenvalue, rp
 
-        real (kind = 8), dimension(:), allocatable :: r, u, Ext_Potential, Potential_U
+        real (kind = 8), intent(out) :: u0
 
-        logical, dimension(2) :: Uniform_Numerov
-        logical :: write_data
+        real (kind = 8), dimension(:), allocatable :: r, u, Potential, Potential_U
+
+        logical, intent(in), dimension(2) :: Uniform_Numerov
+        logical, intent(in):: write_data
 
         if (Uniform_Numerov(1)) then
             n = int((r_range(2)-r_range(1))/h)
@@ -25,12 +29,7 @@ contains
             n = j_max
         end if
 
-<<<<<<< HEAD
-        allocate(r(n), u(n), Ext_Potential(n), Potential_U(n), j_array(n), Hartree(n),&
-        &Exchange(n), stat = AllocateStatus)
-=======
-        allocate(r(n), u(n), Ext_Potential(n), Potential_U(n), stat = AllocateStatus)
->>>>>>> parent of 44cd82e... Esboço do exercício 5.2
+        allocate(r(n), u(n), Potential(n), Potential_U(n), stat = AllocateStatus)
         if (AllocateStatus /= 0) stop "*** Not enough memory ***"
 
         ! Initializing radial coordinates and effective potential
@@ -42,15 +41,14 @@ contains
                 r(i) = rp*(exp(i*delta)-1)
             end if
 
-            Ext_Potential(i) = -1/r(i)
+            Potential(i) = -1/r(i)
         end do
 
         ! Solve Kohn-Sham
-        call KohnSham1D(r, u, Ext_Potential, Eigenvalue_Range, Eigenvalue,&
+        call KohnSham1D(r, u, Potential, Eigenvalue_Range, Eigenvalue,&
         &KS_int_max, Eigenvalue_tol, u0_tol, n, h, rp, delta, Uniform_Numerov)
 
-        print *,"Eigenvalue absolute true error: ", abs(-0.5-Eigenvalue)
-        print *,"**********"
+        u0 = u(1)
 
         call Poisson(r, u, Potential_U, n, h, rp, delta, Uniform_Numerov)
 
@@ -68,26 +66,6 @@ contains
             close(2)
         end if
 
-<<<<<<< HEAD
-        if (ExchangeComparison) then
-            Hartree = Potential_U / r
-            Exchange = -((3./4.)*(u/(pi * r))**2.)**(1.0/3.0)
-
-            if (Uniform_Numerov(1)) then
-                ExHartree_ratio = (-(1./4.)*sum(Exchange*(u**2.)*h)) / (-(1./2.)*sum(Hartree*(u**2.)*h))
-                print *, 'Hartree energy: ', (-(1./2.)*sum(Hartree*(u**2.)*h))
-            else
-                ExHartree_ratio = (-rp*delta*(1./4.)*sum(Exchange*(u**2.)*exp(j_array*delta))) &
-                &/ (-rp*delta*(1./2.)*sum(Hartree*(u**2.)*exp(j_array*delta)))
-                print *, 'Hartree energy: ', (-rp*delta*(1./2.)*sum(Hartree*(u**2.)*exp(j_array*delta)))
-            end if
-
-            print *, 'Exchange correlation energy over Hartree energy (abs): ',&
-            &ExHartree_ratio
-        end if
-
-=======
->>>>>>> parent of 44cd82e... Esboço do exercício 5.2
     end subroutine HydrogenAtom
 
     subroutine HeliumAtom(r_range, Eigenvalue_range, SelfCons_int_max, KS_int_max,&
@@ -111,7 +89,7 @@ contains
             n = j_max
         end if
 
-        allocate(r(n), u(n), Ext_Potential(n), Hartree(n), Exchange(n), Potential_U(n), j_array(N), stat = AllocateStatus)
+        allocate(r(n), u(n), Ext_Potential(n), Hartree(n), Exchange(n), Potential_U(n), j_array(n), stat = AllocateStatus)
         if (AllocateStatus /= 0) stop "*** Not enough memory ***"
 
         ! Initializing radial coordinates and potentials
