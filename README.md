@@ -5,9 +5,9 @@ Compile main module for Fortran (in my case, f95 calls for GNU Fortran)
 ```bash
 f95 -c dft.f95
 ```
-and the module for Python (currently, I could only make it work with two separated files)
+and the module for Python
 ```bash
-f2py -c -m pydft pydft.f95
+f2py -c -m pydft dft.f95
 ```
 ## Running
 Call for hydrogen and/or helium solutions (open files to edit parameters)
