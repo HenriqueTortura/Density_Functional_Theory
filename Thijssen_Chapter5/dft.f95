@@ -107,8 +107,9 @@ contains
 
         integer, intent(in) :: SelfCons_int_max, KS_int_max, j_max,&
         &Z, N_electrons, Correlation_Method
-        integer :: n, i, AllocateStatus
+        integer :: n, i, j, AllocateStatus
 
+        integer, dimension(:), allocatable :: indices1, indices2
         real (kind = 8) , parameter :: pi = 3.141592653589793
 
         real (kind = 8), dimension(2), intent(in) :: r_range, Eigenvalue_Range
@@ -183,8 +184,21 @@ contains
 
                 else if (Correlation_Method == 2) then !Perdew-Zunger
                     r_s = ((3.*r**2.)/u**2.)**(1./3.)
-                    e_c = -(0.045/2)*( (1+(r_s/21)**3)*log(1+(21/r_s)) + r_s/42 - (r_s/21)**2. - 1/3 )
-                    Correlation = -(0.045/2)*log(1+(21/r_s))
+                    indices1 = pack([(j, j=1,size(r_s))], r_s .GE. 1)
+                    indices2 = pack([(j, j=1,size(r_s))], r_s .LT. 1)
+
+                    e_c(indices1) = -0.1423/( 1. + 1.0529*sqrt(r_s(indices1)) + 0.3334*r_s(indices1) )
+
+                    e_c(indices2) = 0.0311*log(r_s(indices2)) -0.048&
+                    &+0.002*r_s(indices2)*log(r_s(indices2)) -0.0116*r_s(indices2)
+
+                    Correlation(indices1) = e_c(indices1)*&
+                    &((1. + (7./6.)*1.0529*sqrt(r_s(indices1)) + 0.3334*r_s(indices1))&
+                    & / (1. + 1.0529*sqrt(r_s(indices1)) + 0.3334*r_s(indices1)))
+
+                    Correlation(indices2) = 0.0311*log(r_s(indices2)) -0.048 -(0.0311/3.)&
+                    &+(2./3.)*0.002*r_s(indices2)*log(r_s(indices2))&
+                    &+(2.*(-0.0116)-0.002)*r_s(indices2)/3
 
                 end if
 

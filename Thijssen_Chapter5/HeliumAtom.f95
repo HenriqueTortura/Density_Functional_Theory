@@ -8,7 +8,7 @@ program Helium
     real (kind = 8), parameter, dimension(2) :: r_range = (/ 0., 20./), Eigenvalue_Range = (/ -5., 0./)
 
     integer, parameter :: KS_int_max = 100, SelfCons_int_max = 100,&
-    &Z = 2, N_electrons = 2, Correlation_Method = 1
+    &Z = 2, N_electrons = 2, Correlation_Method = 2
 
     real (kind = 8), parameter :: Eigenvalue_tol = 0.0001, u0_tol = 0.0001, SelfCons_tol = 0.0001
 
