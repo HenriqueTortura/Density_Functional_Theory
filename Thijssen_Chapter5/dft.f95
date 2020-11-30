@@ -13,11 +13,12 @@ contains
 
         real (kind = 8), intent(in), dimension(2) :: r_range, Eigenvalue_Range
         real (kind = 8), intent(in) ::  Eigenvalue_tol, u0_tol, h, delta
-        real (kind = 8) :: Eigenvalue, rp
+        real (kind = 8) :: Eigenvalue, rp, Hartree_Energy, Exchange_Energy, Correlation_Energy
 
         real (kind = 8), intent(out) :: u0
 
-        real (kind = 8), dimension(:), allocatable :: r, u, Potential, Potential_U
+        real (kind = 8), dimension(:), allocatable :: r, u, Potential, Potential_U,&
+        &j_array, Hartree, Exchange, r_s, e_c
 
         logical, intent(in), dimension(2) :: Uniform_Numerov
         logical, intent(in):: write_data
@@ -29,11 +30,13 @@ contains
             n = j_max
         end if
 
-        allocate(r(n), u(n), Potential(n), Potential_U(n), stat = AllocateStatus)
-        if (AllocateStatus /= 0) stop "*** Not enough memory ***"
+        allocate(r(n), u(n), Potential(n), Potential_U(n), j_array(n), Hartree(n),&
+        &Exchange(n), r_s(n), e_c(n), stat = AllocateStatus)
+        if (AllocateStatus /= 0) stop '*** Not enough memory ***'
 
         ! Initializing radial coordinates and effective potential
         do i=1, n
+            j_array(i) = i
 
             if (Uniform_Numerov(1)) then
                 r(i) = r_range(1) + h*i
@@ -52,6 +55,35 @@ contains
 
         call Poisson(r, u, Potential_U, n, h, rp, delta, Uniform_Numerov)
 
+        Hartree = Potential_U / r
+        Exchange = -((3./4.)*(u/(pi * r))**2.)**(1.0/3.0)
+        r_s = ((3.*r**2.)/u**2.)**(1./3.)
+        e_c = -(0.045/2)*( (1+(r_s/21)**3)*log(1+(21/r_s)) + r_s/42 - (r_s/21)**2. - 1/3 )
+
+        if (Uniform_Numerov(1)) then
+            Hartree_Energy = (1./2.)*sum(Hartree*(u**2.)*h)
+            Exchange_Energy = -( (9./(16.*pi))**(2./3.) )*sum(( ((u**4.)/r)**(2./3.) )*h)
+            Correlation_Energy = sum((u**2.)*e_c*h)
+        else
+            Hartree_Energy = rp*delta*(1./2.)*sum(Hartree*(u**2.)*exp(j_array*delta))
+            Exchange_Energy = -rp*delta*( (9./(16.*pi))**(2./3.) )*sum(( ((u**4.)/r)**(2./3.) )*exp(j_array*delta))
+            Correlation_Energy = rp*delta*sum((u**2.)*e_c*exp(j_array*delta))
+        end if
+
+        print *,'**********'
+        print *,'Hartree energy (eV): ', 27.2113845*Hartree_Energy
+        print *,'Hartree energy: ', Hartree_Energy
+
+        print *,'**********'
+        print *,'Exchange energy: ', Exchange_Energy
+        print *,'Ratio: ', Exchange_Energy/Hartree_Energy
+        print *,'**********'
+        print *,'Correlation energy (Hedin-Lundqvist): ', Correlation_Energy
+        print *,'Ratio: ', Correlation_Energy/Hartree_Energy
+        print *,'**********'
+        print *,'Combined ratio: ', (Exchange_Energy+Correlation_Energy)/Hartree_Energy
+        print *,'**********'
+
         ! To plot u(r) and Potential U
         if (write_data) then
             open(1, file='Hydrogen_u.dat', status='replace')
@@ -69,18 +101,29 @@ contains
     end subroutine HydrogenAtom
 
     subroutine HeliumAtom(r_range, Eigenvalue_range, SelfCons_int_max, KS_int_max,&
-    &Eigenvalue_tol, u0_tol, SelfCons_tol, Uniform_Numerov, h, j_max, delta)
+    &Eigenvalue_tol, u0_tol, SelfCons_tol, Uniform_Numerov, h, j_max, delta,&
+    &Correlation_Method, Z, N_electrons, Energy, Hartree_Correction,&
+    &Exchange_Correction, Correlation_Correction)
 
-        integer :: n, j_max, i, KS_int_max, SelfCons_int_max, AllocateStatus
+        integer, intent(in) :: SelfCons_int_max, KS_int_max, j_max,&
+        &Z, N_electrons, Correlation_Method
+        integer :: n, i, AllocateStatus
+
         real (kind = 8) , parameter :: pi = 3.141592653589793
 
-        real (kind = 8), dimension(2) :: r_range, Eigenvalue_Range, E_Range_aux
-        real (kind = 8)  :: Eigenvalue, Eigenvalue_aux, Energy,&
-        &Eigenvalue_tol, u0_tol, SelfCons_tol, h, delta, rp
+        real (kind = 8), dimension(2), intent(in) :: r_range, Eigenvalue_Range
+        real (kind = 8), dimension(2) :: E_Range_aux
 
-        real (kind = 8), dimension(:), allocatable :: r, u, Ext_Potential, Hartree, Exchange, Potential_U, j_array
+        real (kind = 8), intent(in) :: Eigenvalue_tol, u0_tol, SelfCons_tol,&
+        &h, delta
+        real (kind = 8), intent(out) :: Energy, Hartree_Correction,&
+        &Exchange_Correction, Correlation_Correction
+        real (kind = 8)  :: Eigenvalue, Eigenvalue_aux, rp, ExHartree_ratio
 
-        logical, dimension(2) :: Uniform_Numerov
+        real (kind = 8), dimension(:), allocatable :: r, u, Ext_Potential,&
+        &Hartree, Exchange, Correlation, Potential_U, j_array, r_s, e_c
+
+        logical, dimension(2), intent(in) :: Uniform_Numerov
 
         if (Uniform_Numerov(1)) then
             n = int((r_range(2)-r_range(1))/h)
@@ -89,8 +132,9 @@ contains
             n = j_max
         end if
 
-        allocate(r(n), u(n), Ext_Potential(n), Hartree(n), Exchange(n), Potential_U(n), j_array(n), stat = AllocateStatus)
-        if (AllocateStatus /= 0) stop "*** Not enough memory ***"
+        allocate(r(n), u(n), Ext_Potential(n), Hartree(n), Exchange(n),&
+        &Correlation(n), Potential_U(n), j_array(n), r_s(n), e_c(n), stat = AllocateStatus)
+        if (AllocateStatus /= 0) stop '*** Not enough memory ***'
 
         ! Initializing radial coordinates and potentials
         do i=1, n
@@ -102,9 +146,10 @@ contains
                 r(i) = rp*(exp(i*delta)-1)
             end if
 
-            Ext_Potential(i) = -2/r(i)
+            Ext_Potential(i) = -Z/r(i)
             Hartree(i) = 0
             Exchange(i) = 0
+            Correlation(i) = 0
         end do
 
         Eigenvalue_aux = 0
@@ -114,20 +159,35 @@ contains
 
             print *,'**************************'
             print *,'**************************'
-            print *,"Iteration: ",i
+            print *,'Iteration: ',i
 
             E_Range_aux = Eigenvalue_Range
             Eigenvalue_aux = Eigenvalue
 
-            call KohnSham1D(r, u, Ext_Potential+Hartree+Exchange, E_Range_aux, Eigenvalue,&
+            call KohnSham1D(r, u, Ext_Potential+Hartree+Exchange+Correlation, E_Range_aux, Eigenvalue,&
             &KS_int_max, Eigenvalue_tol, u0_tol, n, h, rp, delta, Uniform_Numerov)
 
             if (abs(Eigenvalue-Eigenvalue_aux)>=SelfCons_tol) then
                 call Poisson(r, u, Potential_U, n, h, rp, delta, Uniform_Numerov)
 
-                Hartree = 2 * Potential_U / r
+                Hartree = N_electrons*Potential_U / r
+                Exchange = -((3.*N_electrons/4.)*(u/(pi * r))**2.)**(1.0/3.0)
 
-                Exchange = -((3./2.)*(u/(pi * r))**2.)**(1.0/3.0)
+                if (Correlation_Method == 0) then !Only exchange correction
+                    Correlation = 0
+
+                else if (Correlation_Method == 1) then !Hedin-Lundqvist
+                    r_s = ((3.*r**2.)/u**2.)**(1./3.)
+                    e_c = -(0.045/2)*( (1+(r_s/21)**3)*log(1+(21/r_s)) + r_s/42 - (r_s/21)**2. - 1/3 )
+                    Correlation = -(0.045/2)*log(1+(21/r_s))
+
+                else if (Correlation_Method == 2) then !Perdew-Zunger
+                    r_s = ((3.*r**2.)/u**2.)**(1./3.)
+                    e_c = -(0.045/2)*( (1+(r_s/21)**3)*log(1+(21/r_s)) + r_s/42 - (r_s/21)**2. - 1/3 )
+                    Correlation = -(0.045/2)*log(1+(21/r_s))
+
+                end if
+
             else
                 exit
             end if
@@ -135,17 +195,28 @@ contains
         end do
 
         if (Uniform_Numerov(1)) then
-            Energy = 2. * Eigenvalue - sum(Hartree*(u**2.)*h) - (1./2.)*sum(Exchange*(u**2.)*h)
+            Hartree_Correction = -(N_electrons/2.)*sum(Hartree*(u**2.)*h)
+            Exchange_Correction = -(N_electrons/4.)*sum(Exchange*(u**2.)*h)
+            Correlation_Correction = -sum(Correlation*(u**2.)*h) + sum((u**2.)*e_c*h)
         else
-            Energy = 2. * Eigenvalue - rp*delta*sum(Hartree*(u**2.)*exp(j_array*delta))&
-            & - rp*delta*(1./2.)*sum(Exchange*(u**2.)*exp(j_array*delta))
+            Hartree_Correction = -rp*delta*(N_electrons/2.)*sum(Hartree*(u**2.)*exp(j_array*delta))
+            Exchange_Correction = -rp*delta*(N_electrons/4.)*sum(Exchange*(u**2.)*exp(j_array*delta))
+            Correlation_Correction = -rp*delta*sum(Correlation*(u**2.)*exp(j_array*delta))&
+            &+ rp*delta*sum((u**2.)*e_c*exp(j_array*delta))
         end if
 
-        print *,"Eigenvalue absolute true error: ", abs(-0.52-Eigenvalue)
-        print *,"**********"
-        print *,"Energy: ",Energy
-        print *,"Energy absolute true error: ", abs(-2.72-Energy)
-        print *,"**********"
+        Energy = N_electrons*Eigenvalue + Hartree_Correction + Exchange_Correction + Correlation_Correction
+
+        !print *,'Eigenvalue absolute true error: ', abs(-0.52-Eigenvalue)
+        print *,'**********'
+        print *,'Energy: ', Energy
+        !print *,'Energy absolute true error: ', abs(-2.72-Energy)
+        print *,'**********'
+        print *,'Correction terms'
+        print *, 'Hartree: ', Hartree_Correction
+        print *, 'Exchange: ', Exchange_Correction
+        print *, 'Correlation: ', Correlation_Correction
+        print *,'**********'
 
     end subroutine HeliumAtom
 
@@ -208,9 +279,9 @@ contains
 
             end if
 
-            print *,"Eigen Value tested:", EigenValue
-            print *,"Boundary term:", u(1)
-            print *,"*-----------------------*"
+            print *,'Eigen Value tested:', EigenValue
+            print *,'Boundary term:', u(1)
+            print *,'*-----------------------*'
 
             ! Bisection method approaching boundary condition
             if ((abs(u(1))>=u0_tol .or. abs(EigenValue-Eigenvalue_Range(1))>=eigenvalue_tol)) then
@@ -227,9 +298,9 @@ contains
 
         ! Satisfying tolerance for final result
         if ((abs(u(1))<u0_tol .and. abs(EigenValue-Eigenvalue_Range(1))<eigenvalue_tol)) then
-            print *,"Converged for eigenvalue: ", EigenValue
+            print *,'Converged for eigenvalue: ', EigenValue
         else
-            print *,"Did not conveged within ", (i-1), " iterations"
+            print *,'Did not conveged within ', (i-1), ' iterations'
         end if
 
 
@@ -305,9 +376,9 @@ contains
             u = u/sqrt(sum(u*u*h))
             u0s(i) = u(1)
 
-            !print *,"Eigen Value tested:", Eigenvalues(i)
-            !print *,"Boundary term:", u(1)
-            !print *,"*-----------------------*"
+            !print *,'Eigen Value tested:', Eigenvalues(i)
+            !print *,'Boundary term:', u(1)
+            !print *,'*-----------------------*'
 
         end do
 
