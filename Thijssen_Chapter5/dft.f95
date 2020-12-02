@@ -5,7 +5,8 @@ module dft
 contains
 
     subroutine HydrogenAtom(r_range, Eigenvalue_range, KS_int_max,&
-    &Eigenvalue_tol, u0_tol, Uniform_Numerov, h, j_max, delta, write_data, u0)
+    &Eigenvalue_tol, u0_tol, Uniform_Numerov, h, j_max, delta, verbose,&
+    &write_data, Eigenvalue, u0, Hartree_Energy, Exchange_Energy, Correlation_Energy)
 
         integer, intent(in) :: j_max, KS_int_max
         integer :: n,  i, AllocateStatus
@@ -13,15 +14,16 @@ contains
 
         real (kind = 8), intent(in), dimension(2) :: r_range, Eigenvalue_Range
         real (kind = 8), intent(in) ::  Eigenvalue_tol, u0_tol, h, delta
-        real (kind = 8) :: Eigenvalue, rp, Hartree_Energy, Exchange_Energy, Correlation_Energy
+        real (kind = 8) :: rp
+        real (kind = 8), intent(out) :: Hartree_Energy, Exchange_Energy, Correlation_Energy
 
-        real (kind = 8), intent(out) :: u0
+        real (kind = 8), intent(out) :: Eigenvalue, u0
 
-        real (kind = 8), dimension(:), allocatable :: r, u, Potential, Potential_U,&
+        real (kind = 8), dimension(:), allocatable :: r, u, Potential_U, Potential,&
         &j_array, Hartree, Exchange, r_s, e_c
 
         logical, intent(in), dimension(2) :: Uniform_Numerov
-        logical, intent(in):: write_data
+        logical, intent(in):: verbose, write_data
 
         if (Uniform_Numerov(1)) then
             n = int((r_range(2)-r_range(1))/h)
@@ -49,7 +51,7 @@ contains
 
         ! Solve Kohn-Sham
         call KohnSham1D(r, u, Potential, Eigenvalue_Range, Eigenvalue,&
-        &KS_int_max, Eigenvalue_tol, u0_tol, n, h, rp, delta, Uniform_Numerov)
+        &KS_int_max, Eigenvalue_tol, u0_tol, n, h, rp, delta, Uniform_Numerov, verbose)
 
         u0 = u(1)
 
@@ -70,43 +72,40 @@ contains
             Correlation_Energy = rp*delta*sum((u**2.)*e_c*exp(j_array*delta))
         end if
 
-        print *,'**********'
-        print *,'Hartree energy (eV): ', 27.2113845*Hartree_Energy
-        print *,'Hartree energy: ', Hartree_Energy
+        if (verbose) then
+            print *,'**********'
+            print *,'Hartree energy (eV): ', 27.2113845*Hartree_Energy
+            print *,'Hartree energy: ', Hartree_Energy
 
-        print *,'**********'
-        print *,'Exchange energy: ', Exchange_Energy
-        print *,'Ratio: ', Exchange_Energy/Hartree_Energy
-        print *,'**********'
-        print *,'Correlation energy (Hedin-Lundqvist): ', Correlation_Energy
-        print *,'Ratio: ', Correlation_Energy/Hartree_Energy
-        print *,'**********'
-        print *,'Combined ratio: ', (Exchange_Energy+Correlation_Energy)/Hartree_Energy
-        print *,'**********'
+            print *,'**********'
+            print *,'Exchange energy: ', Exchange_Energy
+            print *,'Ratio: ', Exchange_Energy/Hartree_Energy
+            print *,'**********'
+            print *,'Correlation energy (Hedin-Lundqvist): ', Correlation_Energy
+            print *,'Ratio: ', Correlation_Energy/Hartree_Energy
+            print *,'**********'
+            print *,'Combined ratio: ', (Exchange_Energy+Correlation_Energy)/Hartree_Energy
+            print *,'**********'
+        end if
 
-        ! To plot u(r) and Potential U
         if (write_data) then
-            open(1, file='Hydrogen_u.dat', status='replace')
-                do i=1, n
-                    write(1,*) r(i), u(i)
+            print *,'Writing data'
+            open(1, file='Hydrogen_data.dat', status='replace')
+                do i=1, size(r)
+                    write(1,*) r(i), u(i), Potential_U(i)
                 end do
             close(1)
-            open(2, file='Hydrogen_Potential_U.dat', status='replace')
-                do i=1, n
-                    write(2,*) r(i), Potential_U(i)
-                end do
-            close(2)
         end if
 
     end subroutine HydrogenAtom
 
     subroutine HeliumAtom(r_range, Eigenvalue_range, SelfCons_int_max, KS_int_max,&
-    &Eigenvalue_tol, u0_tol, SelfCons_tol, Uniform_Numerov, h, j_max, delta,&
-    &Correlation_Method, Z, N_electrons, Energy, Hartree_Correction,&
-    &Exchange_Correction, Correlation_Correction)
+    &Eigenvalue_tol, u0_tol, SelfCons_tol, Uniform_Numerov, h, j_max, delta, verbose,&
+    &SelfInteractionCorrection, Exchange_Method, Correlation_Method, Z, N_electrons,&
+    &Energy, Eigenvalue, Hartree_Correction, Exchange_Correction, Correlation_Correction)
 
         integer, intent(in) :: SelfCons_int_max, KS_int_max, j_max,&
-        &Z, N_electrons, Correlation_Method
+        &Z, N_electrons, Exchange_Method, Correlation_Method
         integer :: n, i, j, AllocateStatus
 
         integer, dimension(:), allocatable :: indices1, indices2
@@ -117,14 +116,15 @@ contains
 
         real (kind = 8), intent(in) :: Eigenvalue_tol, u0_tol, SelfCons_tol,&
         &h, delta
-        real (kind = 8), intent(out) :: Energy, Hartree_Correction,&
+        real (kind = 8), intent(out) :: Energy, Eigenvalue, Hartree_Correction,&
         &Exchange_Correction, Correlation_Correction
-        real (kind = 8)  :: Eigenvalue, Eigenvalue_aux, rp, ExHartree_ratio
+        real (kind = 8)  :: Eigenvalue_aux, rp, ExHartree_ratio
 
         real (kind = 8), dimension(:), allocatable :: r, u, Ext_Potential,&
         &Hartree, Exchange, Correlation, Potential_U, j_array, r_s, e_c
 
         logical, dimension(2), intent(in) :: Uniform_Numerov
+        logical, intent(in) :: verbose, SelfInteractionCorrection
 
         if (Uniform_Numerov(1)) then
             n = int((r_range(2)-r_range(1))/h)
@@ -158,21 +158,32 @@ contains
 
         do i=1, SelfCons_int_max
 
-            print *,'**************************'
-            print *,'**************************'
-            print *,'Iteration: ',i
+            if (verbose) then
+                print *,'**************************'
+                print *,'**************************'
+                print *,'Iteration: ',i
+            end if
 
             E_Range_aux = Eigenvalue_Range
             Eigenvalue_aux = Eigenvalue
 
             call KohnSham1D(r, u, Ext_Potential+Hartree+Exchange+Correlation, E_Range_aux, Eigenvalue,&
-            &KS_int_max, Eigenvalue_tol, u0_tol, n, h, rp, delta, Uniform_Numerov)
+            &KS_int_max, Eigenvalue_tol, u0_tol, n, h, rp, delta, Uniform_Numerov, verbose)
 
             if (abs(Eigenvalue-Eigenvalue_aux)>=SelfCons_tol) then
                 call Poisson(r, u, Potential_U, n, h, rp, delta, Uniform_Numerov)
 
-                Hartree = N_electrons*Potential_U / r
-                Exchange = -((3.*N_electrons/4.)*(u/(pi * r))**2.)**(1.0/3.0)
+                if (SelfInteractionCorrection) then
+                    Hartree = (N_electrons/2)*Potential_U / r
+                else
+                    Hartree = N_electrons*Potential_U / r
+                end if
+
+                if (Exchange_Method==0) then
+                    Exchange = 0
+                else if (Exchange_Method==1) then
+                    Exchange = -((3.*N_electrons/4.)*(u/(pi * r))**2.)**(1.0/3.0)
+                end if
 
                 if (Correlation_Method == 0) then !Only exchange correction
                     Correlation = 0
@@ -199,9 +210,7 @@ contains
                     Correlation(indices2) = 0.0311*log(r_s(indices2)) -0.048 -(0.0311/3.)&
                     &+(2./3.)*0.002*r_s(indices2)*log(r_s(indices2))&
                     &+(2.*(-0.0116)-0.002)*r_s(indices2)/3
-
                 end if
-
             else
                 exit
             end if
@@ -221,21 +230,23 @@ contains
 
         Energy = N_electrons*Eigenvalue + Hartree_Correction + Exchange_Correction + Correlation_Correction
 
-        !print *,'Eigenvalue absolute true error: ', abs(-0.52-Eigenvalue)
-        print *,'**********'
-        print *,'Energy: ', Energy
-        !print *,'Energy absolute true error: ', abs(-2.72-Energy)
-        print *,'**********'
-        print *,'Correction terms'
-        print *, 'Hartree: ', Hartree_Correction
-        print *, 'Exchange: ', Exchange_Correction
-        print *, 'Correlation: ', Correlation_Correction
-        print *,'**********'
+        if (verbose) then
+            !print *,'Eigenvalue absolute true error: ', abs(-0.52-Eigenvalue)
+            print *,'**********'
+            print *,'Energy: ', Energy
+            !print *,'Energy absolute true error: ', abs(-2.72-Energy)
+            print *,'**********'
+            print *,'Correction terms'
+            print *, 'Hartree: ', Hartree_Correction
+            print *, 'Exchange: ', Exchange_Correction
+            print *, 'Correlation: ', Correlation_Correction
+            print *,'**********'
+        end if
 
     end subroutine HeliumAtom
 
     subroutine KohnSham1D(r, u, Potential, Eigenvalue_Range, EigenValue,&
-    &KS_int_max, eigenvalue_tol, u0_tol, n, h, rp, delta, Uniform_Numerov)
+    &KS_int_max, eigenvalue_tol, u0_tol, n, h, rp, delta, Uniform_Numerov, verbose)
     ! Routine to solve a one dimentional Kohn-Sham (Schrödinger) equation.
     ! Parameters
     !   r: 1D array of coordinates to run by;
@@ -255,6 +266,7 @@ contains
         real (kind =8), dimension(2) :: Eigenvalue_Range
         real (kind = 8) :: EigenValue, eigenvalue_tol, u0_tol, h, rp, delta
         logical, dimension(2) :: Uniform_Numerov
+        logical :: verbose
 
         ! Initial wave function guess
         !Uniform guess, using Numerov
@@ -293,9 +305,11 @@ contains
 
             end if
 
-            print *,'Eigen Value tested:', EigenValue
-            print *,'Boundary term:', u(1)
-            print *,'*-----------------------*'
+            if (verbose) then
+                print *,'Eigen Value tested:', EigenValue
+                print *,'Boundary term:', u(1)
+                print *,'*-----------------------*'
+            end if
 
             ! Bisection method approaching boundary condition
             if ((abs(u(1))>=u0_tol .or. abs(EigenValue-Eigenvalue_Range(1))>=eigenvalue_tol)) then
@@ -311,10 +325,12 @@ contains
         end do
 
         ! Satisfying tolerance for final result
-        if ((abs(u(1))<u0_tol .and. abs(EigenValue-Eigenvalue_Range(1))<eigenvalue_tol)) then
-            print *,'Converged for eigenvalue: ', EigenValue
-        else
-            print *,'Did not conveged within ', (i-1), ' iterations'
+        if (verbose) then
+            if ((abs(u(1))<u0_tol .and. abs(EigenValue-Eigenvalue_Range(1))<eigenvalue_tol)) then
+                print *,'Converged for eigenvalue: ', EigenValue
+            else
+                print *,'Did not conveged within ', (i-1), ' iterations'
+            end if
         end if
 
 
@@ -363,38 +379,52 @@ contains
 
     end subroutine Poisson
 
-    subroutine KohnShamSweep(r, u, Potential, h, Eigenvalues, u0s)
+    subroutine KohnShamSweep(r_range, Eigenvalue_Range, h, n_eigenvalues, path)
 
-        integer i
-        real (kind = 8), dimension(:) :: Potential, u, r
-        real (kind = 8), dimension(:) :: Eigenvalues, u0s
-        integer :: n, n_eigenvalues
-        real (kind = 8) :: h
+        real (kind = 8), dimension(2), intent(in) :: r_range, Eigenvalue_Range
+        real (kind = 8), intent(in) :: h
+        integer, intent(in) :: n_eigenvalues
+        character(len=256), intent(in) :: path
 
-        ! Arrays size and interation counter
-        n = size(u)
-        n_eigenvalues = size(Eigenvalues)
-        i = 1
+        real (kind = 8), dimension(:), allocatable :: Potential, u, r
+        real (kind = 8) :: Eigenvalue
+        integer :: i, n, AllocateStatus
+        character(len=:), allocatable :: realpath
+
+        realpath = trim(path)
+        n = int((r_range(2)-r_range(1))/h)
+
+        allocate(r(n), u(n), Potential(n), stat = AllocateStatus)
+        if (AllocateStatus /= 0) stop '*** Not enough memory ***'
+
+        ! Initializing radial coordinates and effective potential
+        do i=1, n
+            r(i) = r_range(1) + h*i
+            Potential(i) = -1/r(i)
+        end do
 
         ! Initial wave function guess
         u(n) = r(n)*exp(-r(n))
         u(n-1) = r(n-1)*exp(-r(n-1))
 
-        ! Main loop for finding the Kohn-Sham eigenvalue
-        do i=1, n_eigenvalues
-            print *,i,'/',n_eigenvalues
-            ! Integrating wave function via Numerov
-            u = Numerov(u, -2*(Eigenvalues(i)-Potential), h, n)
+        open(1, file=realpath//'Hydrogen_u0s.dat', status='replace')
+            do i=1, n_eigenvalues ! Main loop for finding the Kohn-Sham eigenvalue
 
-            ! Normalizing u
-            u = u/sqrt(sum(u*u*h))
-            u0s(i) = u(1)
+                !print *,i,'/',n_eigenvalues
+                ! Integrating wave function via Numerov
+                Eigenvalue = Eigenvalue_Range(1) + (i-1)*(Eigenvalue_Range(2)-Eigenvalue_Range(1))/(n_eigenvalues-1)
+                u = Numerov(u, -2*(Eigenvalue-Potential), h, n)
 
-            !print *,'Eigen Value tested:', Eigenvalues(i)
-            !print *,'Boundary term:', u(1)
-            !print *,'*-----------------------*'
+                ! Normalizing u
+                u = u/sqrt(sum(u*u*h))
 
-        end do
+                !print *,'Eigen Value tested:', Eigenvalue
+                !print *,'Boundary term:', u(1)
+                !print *,'*-----------------------*'
+                write(1,*) Eigenvalue, u(1)
+
+            end do
+        close(1)
 
     end subroutine KohnShamSweep
 

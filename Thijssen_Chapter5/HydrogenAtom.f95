@@ -18,18 +18,20 @@ program Hydrogen
     integer, parameter :: j_max = 200000
     real (kind = 8), parameter :: delta = 0.0001
 
-    logical, parameter :: write_data = .FALSE.
+    logical, parameter :: write_data = .TRUE., verbose = .TRUE.
 
+    ! Setting output variables
     real :: start, finish
 
-    real (kind = 8) :: u0
+    real (kind = 8) :: Eigenvalue, u0, Hartree_Energy, Exchange_Energy, Correlation_Energy
 
     !---------------------------------------------------------------------------------------!
 
     call cpu_time(start)
 
     call HydrogenAtom(r_range, Eigenvalue_range, KS_int_max, Eigenvalue_tol, u0_tol,&
-    &Uniform_Numerov, h, j_max, delta, write_data, u0)
+    &Uniform_Numerov, h, j_max, delta, verbose, write_data, Eigenvalue, u0,&
+    &Hartree_Energy, Exchange_Energy, Correlation_Energy)
 
     call cpu_time(finish)
     print *,"CPU time = ",finish-start,"s"
