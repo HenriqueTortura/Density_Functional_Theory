@@ -9,7 +9,7 @@ program Sweep
 
     real (kind = 8), dimension(2) :: r_range = (/ 0., 50./), Eigenvalue_Range = (/-1., 5./)
 
-    integer, parameter :: n_eigenvalues = 10001
+    integer, parameter :: n_eigenvalues = 501
 
     character(len=256) :: path = 'data/'
 

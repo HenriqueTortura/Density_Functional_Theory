@@ -359,3 +359,47 @@ if run_Exercise51:
     plt.grid()
     plt.show()
     plt.savefig(path+'img/u0vsN.png', dpi=200, bbox_inches='tight')
+    
+#%% Exercise 5.2
+run_Exercise52 = yes_or_no('Run exercise 5.2?')
+if run_Exercise52:
+    print('\n')
+    print('#####################')
+    print('#### Exercise 5.2')
+    
+    # Parameters
+    r_range = [0, 50]
+    Eigenvalue_range = [-5, 0.]
+    
+    u0_tol= 0.001
+    Eigenvalue_tol = 0.00001
+    h = 0.0001
+    
+    j_max = 200000 
+    delta = 0.0001
+    
+    KS_int_max = 100
+    
+    verbose = False
+    write_data = False
+    
+    Uniform_Numerov = [False, True]
+    
+    hydrogen_eigenvalue, u0, HE, EE, CE = np.abs(pydft.dft.hydrogenatom(r_range,
+                                          Eigenvalue_range,
+                                          KS_int_max, Eigenvalue_tol,
+                                          u0_tol, Uniform_Numerov, h,
+                                          j_max, delta,
+                                          verbose, write_data, path+'data/'))
+    print('\n')
+    print ('Hartree energy: '+str(HE))
+    print ('Hartree energy (ev): '+str(27.2113845*HE))
+    print('**********')
+    print('Exchange energy: '+str(EE))
+    print('Ratio: '+str(EE/HE))
+    print('**********')
+    print('Correlation energy (Hedin-Lundqvist): '+str(CE))
+    print('Ratio: '+str(CE/HE))
+    print('**********')
+    print('Combined ratio: '+str((EE+CE)/HE))
+    print('**********')
