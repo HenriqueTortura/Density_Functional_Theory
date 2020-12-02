@@ -55,7 +55,7 @@ if run_Section55:
                                           KS_int_max, Eigenvalue_tol,
                                           u0_tol, Uniform_Numerov, h,
                                           200000, 0.0001,
-                                          verbose, write_data))
+                                          verbose, write_data, path+'data/'))
     
     print('Eigenvalue: '+str(hydrogen_eigenvalue))
     print('Expected: 0.5')
@@ -64,7 +64,7 @@ if run_Section55:
     # Plotting
     print('\n')
     print('Checking u(r) for exact hydrogen solution:')
-    r, u, potentialU = np.genfromtxt('Hydrogen_data.dat', unpack = 'True')
+    r, u, potentialU = np.genfromtxt(path+'data/Hydrogen_data.dat', unpack = 'True')
     plt.figure(figsize=(16,9))
     plt.title('Função de onda radial $u(r) = r\cdot\psi(r)$', fontsize=20)
     plt.plot(r, 2*r*np.exp(-r), label='Exata: $u(r)=2re^{-r}$', linewidth=4)
@@ -77,44 +77,6 @@ if run_Section55:
     plt.grid()
     plt.show()
     plt.savefig(path+'img/RadialWaveFunction.png', dpi=200, bbox_inches='tight')
-    
-    # Option to sweep hydrogen "eigenvalues"
-    plot_Sweep_Hydrogen = yes_or_no('Extra: Sweep eigenvalues?')
-    if plot_Sweep_Hydrogen:
-        plot_all = 0
-        plot_energy_levels = 1
-        
-        pydft.dft.kohnshamsweep([0.0,50.0], [-1.0,5.0],
-                                0.0001, 501, path+'data')
-        eigenvalues, u0s = np.genfromtxt(path+'data/Hydrogen_u0s.dat', unpack = 'True')
-        
-        plt.figure(figsize=(16,9))
-        plt.title('Termo de fronteira $u(0)$ vs Autovalor - '
-                  +str(np.size(eigenvalues))+' pontos', fontsize=20)
-        plt.plot(eigenvalues, u0s)
-        plt.xlabel('Autovalor', fontsize=18)
-        plt.ylabel('$u(0)$', fontsize=18)
-        plt.grid()
-        spec='global'
-        if not plot_all:
-            if plot_energy_levels: #Plot energy levels
-                plt.xlim(-0.6,0)
-                plt.ylim(-0.25,0.25)
-                spec = 'bound_levels'
-                for i in range(1,5):
-                    plt.vlines(-0.5/i**2, -0.2, 0.2,
-                               color='r', label='n='+str(i))
-                    plt.text(-0.5/i**2, 0.2, 'n='+str(i),
-                             horizontalalignment='center', fontsize=14,
-                             bbox={'facecolor': 'red', 'alpha': 1, 'pad': 5})
-            else: #Plot positive eigenvalues
-                plt.xlim(0,5)
-                plt.ylim(-0.15,0.15)
-                spec='unknown'
-        plt.tight_layout()
-        plt.show()
-        plt.savefig(path+'img/BoundaryTerm_vs_Eigenvalue--'+spec+'.png',
-                    dpi=200, bbox_inches='tight')
     
     #%% 5.5.2 Including the Hartree potential
     print('\n')
@@ -196,6 +158,44 @@ if run_Section55:
     print('Calculated: '+str(Energy))
     print('Expected by Thijssen: -2.72')
 
+#%% Extra: Extra: Sweep hydrogen eigenvalues
+plot_Sweep_Hydrogen = yes_or_no('Extra: Sweep hydrogen eigenvalues?')
+if plot_Sweep_Hydrogen:
+    plot_all = 0
+    plot_energy_levels = 1
+    
+    pydft.dft.kohnshamsweep([0.0,50.0], [-1.0,5.0],
+                            0.0001, 1001, path+'data/')
+    eigenvalues, u0s = np.genfromtxt(path+'data/Hydrogen_u0s.dat', unpack = 'True')
+    
+    plt.figure(figsize=(16,9))
+    plt.title('Termo de fronteira $u(0)$ vs Autovalor - '
+              +str(np.size(eigenvalues))+' pontos', fontsize=20)
+    plt.plot(eigenvalues, u0s)
+    plt.xlabel('Autovalor', fontsize=18)
+    plt.ylabel('$u(0)$', fontsize=18)
+    plt.grid()
+    spec='global'
+    if not plot_all:
+        if plot_energy_levels: #Plot energy levels
+            plt.xlim(-0.6,0)
+            plt.ylim(-0.25,0.25)
+            spec = 'bound_levels'
+            for i in range(1,5):
+                plt.vlines(-0.5/i**2, -0.2, 0.2,
+                           color='r', label='n='+str(i))
+                plt.text(-0.5/i**2, 0.2, 'n='+str(i),
+                         horizontalalignment='center', fontsize=14,
+                         bbox={'facecolor': 'red', 'alpha': 1, 'pad': 5})
+        else: #Plot positive eigenvalues
+            plt.xlim(0,5)
+            plt.ylim(-0.15,0.15)
+            spec='unknown'
+    plt.tight_layout()
+    plt.show()
+    plt.savefig(path+'img/BoundaryTerm_vs_Eigenvalue--'+spec+'.png',
+                dpi=200, bbox_inches='tight')
+
 #%% Exercise 5.1
 run_Exercise51 = yes_or_no('Run exercise 5.1?')
 if run_Exercise51:
@@ -227,7 +227,7 @@ if run_Exercise51:
                                           KS_int_max, Eigenvalue_tol,
                                           u0_tol, Uniform_Numerov, h,
                                           j_max, delta,
-                                          verbose, write_data))
+                                          verbose, write_data, path+'data/'))
     print('## Uniform grid')
     print('u(0): '+str(u0))
     print('Eigenvalue: '+str(hydrogen_eigenvalue))
@@ -240,7 +240,7 @@ if run_Exercise51:
                                           KS_int_max, Eigenvalue_tol,
                                           u0_tol, Uniform_Numerov, h,
                                           j_max, delta,
-                                          verbose, write_data))
+                                          verbose, write_data, path+'data/'))
     print('\n## Non-uniform grid (Runge-Kutta)')
     print('u(0): '+str(u0))
     print('Eigenvalue: '+str(hydrogen_eigenvalue))
@@ -253,7 +253,7 @@ if run_Exercise51:
                                           KS_int_max, Eigenvalue_tol,
                                           u0_tol, Uniform_Numerov, h,
                                           j_max, delta,
-                                          verbose, write_data))
+                                          verbose, write_data, path+'data/'))
     print('\n## Non-uniform grid (Numerov)')
     print('u(0): '+str(u0))
     print('Eigenvalue: '+str(hydrogen_eigenvalue))
@@ -339,7 +339,7 @@ if run_Exercise51:
                                           KS_int_max, Eigenvalue_tol,
                                           u0_tol, Uniform_Numerov, h,
                                           j_max[i], delta[i],
-                                          verbose, write_data))
+                                          verbose, write_data, path+'data/'))
     
     #%% Fitting
     popt, pcov = curve_fit(func, j_max, u0)

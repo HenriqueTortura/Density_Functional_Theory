@@ -6,7 +6,8 @@ contains
 
     subroutine HydrogenAtom(r_range, Eigenvalue_range, KS_int_max,&
     &Eigenvalue_tol, u0_tol, Uniform_Numerov, h, j_max, delta, verbose,&
-    &write_data, Eigenvalue, u0, Hartree_Energy, Exchange_Energy, Correlation_Energy)
+    &write_data, path, Eigenvalue, u0, Hartree_Energy, Exchange_Energy,&
+    &Correlation_Energy)
 
         integer, intent(in) :: j_max, KS_int_max
         integer :: n,  i, AllocateStatus
@@ -24,6 +25,10 @@ contains
 
         logical, intent(in), dimension(2) :: Uniform_Numerov
         logical, intent(in):: verbose, write_data
+        character(len=256), intent(in) :: path
+        character(len=:), allocatable :: realpath
+
+        realpath = trim(path)
 
         if (Uniform_Numerov(1)) then
             n = int((r_range(2)-r_range(1))/h)
@@ -89,8 +94,9 @@ contains
         end if
 
         if (write_data) then
+            realpath = trim(path)
             print *,'Writing data'
-            open(1, file='Hydrogen_data.dat', status='replace')
+            open(1, file=realpath//'Hydrogen_data.dat', status='replace')
                 do i=1, size(r)
                     write(1,*) r(i), u(i), Potential_U(i)
                 end do
