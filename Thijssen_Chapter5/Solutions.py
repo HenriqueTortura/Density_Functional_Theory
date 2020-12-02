@@ -22,7 +22,7 @@ def yes_or_no(question): #Straight from https://stackoverflow.com/questions/4773
         return yes_or_no("Please Enter")
 
 #%% Section 5.5
-run_Section55 = yes_or_no('Run section 5.5 (be patient with the plotting) ?')
+run_Section55 = yes_or_no('\n Run section 5.5 (be patient with the plotting) ?')
 if run_Section55:
     print('#####################')
     print('#### Section 5.5')
@@ -197,7 +197,7 @@ if plot_Sweep_Hydrogen:
                 dpi=200, bbox_inches='tight')
 
 #%% Exercise 5.1
-run_Exercise51 = yes_or_no('Run exercise 5.1?')
+run_Exercise51 = yes_or_no('\n Run exercise 5.1?')
 if run_Exercise51:
     print('\n')
     print('#####################')
@@ -361,7 +361,7 @@ if run_Exercise51:
     plt.savefig(path+'img/u0vsN.png', dpi=200, bbox_inches='tight')
     
 #%% Exercise 5.2
-run_Exercise52 = yes_or_no('Run exercise 5.2?')
+run_Exercise52 = yes_or_no('\n Run exercise 5.2?')
 if run_Exercise52:
     print('\n')
     print('#####################')
@@ -402,4 +402,49 @@ if run_Exercise52:
     print('Ratio: '+str(CE/HE))
     print('**********')
     print('Combined ratio: '+str((EE+CE)/HE))
+    print('**********')
+    
+#%% Exercise 5.3
+run_Exercise53 = yes_or_no('\n Run exercise 5.3?')
+if run_Exercise53:
+    print('\n')
+    print('#####################')
+    print('#### Exercise 5.3')
+    
+    # Parameters
+    r_range = [0, 20]
+    Eigenvalue_range = [-5, 0.]
+    
+    KS_int_max = 100
+    SelfCons_int_max = 100
+    
+    u0_tol= 0.0001
+    Eigenvalue_tol = 0.0001
+    SelfCons_tol = 0.0001
+    
+    h = 0.0001
+    
+    j_max = 200000 
+    delta = 0.0001
+    
+    verbose = False
+    
+    Uniform_Numerov = [False, True]
+    
+    Correlation_Method = 2
+    
+    Energy, eigenvalue, HC, EC, CC = pydft.dft.heliumatom(r_range,
+                         Eigenvalue_range, SelfCons_int_max, KS_int_max,
+                         Eigenvalue_tol, u0_tol, SelfCons_tol,
+                         Uniform_Numerov, h, j_max, delta, verbose,
+                         False, 1, Correlation_Method, 2, 2)
+    
+    print('**********')
+    print('Energy: '+str(Energy))
+    print('Expected by Thijssen: -2.83')
+    print('**********')
+    print('Correction terms')
+    print( 'Hartree: '+str(HC))
+    print( 'Exchange: '+str(EC))
+    print( 'Correlation: '+str(CC))
     print('**********')
