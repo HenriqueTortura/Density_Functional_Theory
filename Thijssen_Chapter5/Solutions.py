@@ -22,8 +22,7 @@ def yes_or_no(question): #Straight from https://stackoverflow.com/questions/4773
         return yes_or_no("Please Enter")
 
 #%% Section 5.5
-run_Section55 = yes_or_no('\n Run section 5.5 (be patient with the plotting) ?')
-if run_Section55:
+if yes_or_no('\n Run section 5.5 (be patient with the plotting) ?'):
     print('#####################')
     print('#### Section 5.5')
     print('#### A density functional program for the helium atom')
@@ -114,13 +113,14 @@ if run_Section55:
     #h = 0.00001 # For a better result in energy, but
                  #without convergence in 100 self-consistency interactions
     
-    Energy, eigenvalue, HC, EC, CC = pydft.dft.heliumatom(r_range,
+    Energy, eigenvalue, HC, EC, CC, SC = pydft.dft.heliumatom(r_range,
                                      Eigenvalue_range, SelfCons_int_max,
                                      KS_int_max, Eigenvalue_tol, u0_tol,
                                      SelfCons_tol, Uniform_Numerov, h,
                                      200000, 0.0001, verbose,
                                      SelfInteractionCorrection,
-                                     Exchange_Method, 0, Z, N_electrons)
+                                     Exchange_Method, 0, False, Z,
+                                     N_electrons, False)
     
     print('## Helium eigenvalue')
     print('Calculated: '+str(eigenvalue))
@@ -143,12 +143,12 @@ if run_Section55:
     Exchange_Method = 1 # LDA Exchange
     SelfInteractionCorrection = False # No self-interaction correction
     
-    Energy, eigenvalue, HC, EC, CC = pydft.dft.heliumatom(r_range,
+    Energy, eigenvalue, HC, EC, CC, SC = pydft.dft.heliumatom(r_range,
                          Eigenvalue_range, SelfCons_int_max, KS_int_max,
                          Eigenvalue_tol, u0_tol, SelfCons_tol,
                          Uniform_Numerov, h, 200000, 0.0001, verbose,
                          SelfInteractionCorrection,
-                         Exchange_Method, 0, Z, N_electrons)
+                         Exchange_Method, 0, False, Z, N_electrons, False)
     
     print('## Helium eigenvalue')
     print('Calculated: '+str(eigenvalue))
@@ -159,8 +159,7 @@ if run_Section55:
     print('Expected by Thijssen: -2.72')
 
 #%% Extra: Extra: Sweep hydrogen eigenvalues
-plot_Sweep_Hydrogen = yes_or_no('Extra: Sweep hydrogen eigenvalues?')
-if plot_Sweep_Hydrogen:
+if yes_or_no('Extra: Sweep hydrogen eigenvalues?'):
     plot_all = 0
     plot_energy_levels = 1
     
@@ -197,8 +196,7 @@ if plot_Sweep_Hydrogen:
                 dpi=200, bbox_inches='tight')
 
 #%% Exercise 5.1
-run_Exercise51 = yes_or_no('\n Run exercise 5.1?')
-if run_Exercise51:
+if yes_or_no('\n Run exercise 5.1?'):
     print('\n')
     print('#####################')
     print('#### Exercise 5.1')
@@ -222,42 +220,42 @@ if run_Exercise51:
     
     Uniform_Numerov = [True, True] # Uniform grid
     
-    hydrogen_eigenvalue, u0, HE, EE, CE = np.abs(pydft.dft.hydrogenatom(r_range,
+    hydrogen_eigenvalue, u0, HE, EE, CE = pydft.dft.hydrogenatom(r_range,
                                           Eigenvalue_range,
                                           KS_int_max, Eigenvalue_tol,
                                           u0_tol, Uniform_Numerov, h,
                                           j_max, delta,
-                                          verbose, write_data, path+'data/'))
+                                          verbose, write_data, path+'data/')
     print('## Uniform grid')
     print('u(0): '+str(u0))
     print('Eigenvalue: '+str(hydrogen_eigenvalue))
-    print('Absolute error: '+str(abs(0.5-hydrogen_eigenvalue)))
+    print('Deviation from -0.5: '+str(abs(-0.5-hydrogen_eigenvalue)))
     
     Uniform_Numerov = [False, False] # Non-uniform grid (Runge-Kutta)
     
-    hydrogen_eigenvalue, u0, HE, EE, CE = np.abs(pydft.dft.hydrogenatom(r_range,
+    hydrogen_eigenvalue, u0, HE, EE, CE = pydft.dft.hydrogenatom(r_range,
                                           Eigenvalue_range,
                                           KS_int_max, Eigenvalue_tol,
                                           u0_tol, Uniform_Numerov, h,
                                           j_max, delta,
-                                          verbose, write_data, path+'data/'))
+                                          verbose, write_data, path+'data/')
     print('\n## Non-uniform grid (Runge-Kutta)')
     print('u(0): '+str(u0))
     print('Eigenvalue: '+str(hydrogen_eigenvalue))
-    print('Absolute error: '+str(abs(0.5-hydrogen_eigenvalue)))
+    print('Deviation from -0.5: '+str(abs(-0.5-hydrogen_eigenvalue)))
     
     Uniform_Numerov = [False, True] # Non-uniform grid (Numerov)
     
-    hydrogen_eigenvalue, u0, HE, EE, CE = np.abs(pydft.dft.hydrogenatom(r_range,
+    hydrogen_eigenvalue, u0, HE, EE, CE = pydft.dft.hydrogenatom(r_range,
                                           Eigenvalue_range,
                                           KS_int_max, Eigenvalue_tol,
                                           u0_tol, Uniform_Numerov, h,
                                           j_max, delta,
-                                          verbose, write_data, path+'data/'))
+                                          verbose, write_data, path+'data/')
     print('\n## Non-uniform grid (Numerov)')
     print('u(0): '+str(u0))
     print('Eigenvalue: '+str(hydrogen_eigenvalue))
-    print('Absolute error: '+str(abs(0.5-hydrogen_eigenvalue)))
+    print('Deviation from -0.5: '+str(abs(-0.5-hydrogen_eigenvalue)))
     
     print('\n####### Helium')
     r_range = [0, 20]
@@ -273,11 +271,11 @@ if run_Exercise51:
     
     Uniform_Numerov = [True, True] # Uniform grid
     
-    Energy, eigenvalue, HC, EC, CC = pydft.dft.heliumatom(r_range,
+    Energy, eigenvalue, HC, EC, CC, SC = pydft.dft.heliumatom(r_range,
                          Eigenvalue_range, SelfCons_int_max, KS_int_max,
                          Eigenvalue_tol, u0_tol, SelfCons_tol,
                          Uniform_Numerov, h, j_max, delta, verbose,
-                         False, 1, 0, 2, 2)
+                         False, 1, 0, False, 2, 2, False)
     print('## Uniform grid')
     print('Eigenvalue: '+str(eigenvalue))
     print('Deviation from -0.52: '+str(abs(eigenvalue+0.52)))
@@ -286,11 +284,11 @@ if run_Exercise51:
     
     Uniform_Numerov = [False, False] # Non-uniform grid (Runge-Kutta)
     
-    Energy, eigenvalue, HC, EC, CC = pydft.dft.heliumatom(r_range,
+    Energy, eigenvalue, HC, EC, CC, SC = pydft.dft.heliumatom(r_range,
                          Eigenvalue_range, SelfCons_int_max, KS_int_max,
                          Eigenvalue_tol, u0_tol, SelfCons_tol,
                          Uniform_Numerov, h, j_max, delta, verbose,
-                         False, 1, 0, 2, 2)
+                         False, 1, 0, False, 2, 2, False)
     print('\n## Non-uniform grid (Runge-Kutta)')
     print('Eigenvalue: '+str(eigenvalue))
     print('Deviation from -0.52: '+str(abs(eigenvalue+0.52)))
@@ -299,11 +297,11 @@ if run_Exercise51:
     
     Uniform_Numerov = [False, True] # Non-uniform grid (Numerov)
     
-    Energy, eigenvalue, HC, EC, CC = pydft.dft.heliumatom(r_range,
+    Energy, eigenvalue, HC, EC, CC, SC = pydft.dft.heliumatom(r_range,
                          Eigenvalue_range, SelfCons_int_max, KS_int_max,
                          Eigenvalue_tol, u0_tol, SelfCons_tol,
                          Uniform_Numerov, h, j_max, delta, verbose,
-                         False, 1, 0, 2, 2)
+                         False, 1, 0, False, 2, 2, False)
     print('\n## Non-uniform grid (Numerov)')
     print('Eigenvalue: '+str(eigenvalue))
     print('Deviation from -0.52: '+str(abs(eigenvalue+0.52)))
@@ -361,15 +359,14 @@ if run_Exercise51:
     plt.savefig(path+'img/u0vsN.png', dpi=200, bbox_inches='tight')
     
 #%% Exercise 5.2
-run_Exercise52 = yes_or_no('\n Run exercise 5.2?')
-if run_Exercise52:
+if yes_or_no('\n Run exercise 5.2?'):
     print('\n')
     print('#####################')
     print('#### Exercise 5.2')
     
     # Parameters
-    r_range = [0, 50]
-    Eigenvalue_range = [-5, 0.]
+    r_range = [0, 20]
+    Eigenvalue_range = [-1, 0.]
     
     u0_tol= 0.001
     Eigenvalue_tol = 0.00001
@@ -378,19 +375,19 @@ if run_Exercise52:
     j_max = 200000 
     delta = 0.0001
     
-    KS_int_max = 100
+    KS_int_max = 1
     
     verbose = False
     write_data = False
     
     Uniform_Numerov = [False, True]
     
-    hydrogen_eigenvalue, u0, HE, EE, CE = np.abs(pydft.dft.hydrogenatom(r_range,
+    hydrogen_eigenvalue, u0, HE, EE, CE = pydft.dft.hydrogenatom(r_range,
                                           Eigenvalue_range,
                                           KS_int_max, Eigenvalue_tol,
                                           u0_tol, Uniform_Numerov, h,
                                           j_max, delta,
-                                          verbose, write_data, path+'data/'))
+                                          verbose, write_data, path+'data/')
     print('\n')
     print ('Hartree energy: '+str(HE))
     print ('Hartree energy (ev): '+str(27.2113845*HE))
@@ -405,8 +402,7 @@ if run_Exercise52:
     print('**********')
     
 #%% Exercise 5.3
-run_Exercise53 = yes_or_no('\n Run exercise 5.3?')
-if run_Exercise53:
+if yes_or_no('\n Run exercise 5.3?'):
     print('\n')
     print('#####################')
     print('#### Exercise 5.3')
@@ -430,21 +426,58 @@ if run_Exercise53:
     verbose = False
     
     Uniform_Numerov = [False, True]
-    
     Correlation_Method = 2
     
-    Energy, eigenvalue, HC, EC, CC = pydft.dft.heliumatom(r_range,
+    print('\n####### b) Helium')
+    Polarised = False
+    
+    Energy, eigenvalue, HC, EC, CC, SC = pydft.dft.heliumatom(r_range,
                          Eigenvalue_range, SelfCons_int_max, KS_int_max,
                          Eigenvalue_tol, u0_tol, SelfCons_tol,
                          Uniform_Numerov, h, j_max, delta, verbose,
-                         False, 1, Correlation_Method, 2, 2)
-    
+                         False, 1, Correlation_Method, Polarised, 2, 2, False)
     print('**********')
     print('Energy: '+str(Energy))
     print('Expected by Thijssen: -2.83')
     print('**********')
-    print('Correction terms')
-    print( 'Hartree: '+str(HC))
-    print( 'Exchange: '+str(EC))
-    print( 'Correlation: '+str(CC))
+    
+    
+    print('\n####### c) Hydrogen')
+    Polarised = True
+    
+    Energy, eigenvalue, HC, EC, CC, SC = pydft.dft.heliumatom(r_range,
+                         Eigenvalue_range, SelfCons_int_max, KS_int_max,
+                         Eigenvalue_tol, u0_tol, SelfCons_tol,
+                         Uniform_Numerov, h, j_max, delta, verbose,
+                         False, 1, Correlation_Method, Polarised, 1, 1, False)
+    print('**********')
+    print('Energy: '+str(Energy))
+    print('Expected by Thijssen: -0.478')
+    print('**********')
+    
+    
+    print('\n####### d) Hydrogen with self-energy correction')
+    SIC = True
+    
+    Energy, eigenvalue, HC, EC, CC, SC = pydft.dft.heliumatom(r_range,
+                         Eigenvalue_range, SelfCons_int_max, KS_int_max,
+                         Eigenvalue_tol, u0_tol, SelfCons_tol,
+                         Uniform_Numerov, h, j_max, delta, verbose,
+                         False, 1, Correlation_Method, Polarised, 1, 1, SIC)
+    print('**********')
+    print('Energy: '+str(Energy))
+    print('Expected : -0.5')
+    print('**********')
+    
+    print('\n####### d) Helium with self-energy correction')
+    Polarised = False
+    
+    Energy, eigenvalue, HC, EC, CC, SC = pydft.dft.heliumatom(r_range,
+                         Eigenvalue_range, SelfCons_int_max, KS_int_max,
+                         Eigenvalue_tol, u0_tol, SelfCons_tol,
+                         Uniform_Numerov, h, j_max, delta, verbose,
+                         False, 1, Correlation_Method, Polarised, 2, 2, SIC)
+    print('**********')
+    print('Energy: '+str(Energy))
+    print('Expected by Thijssen: -2.918')
     print('**********')

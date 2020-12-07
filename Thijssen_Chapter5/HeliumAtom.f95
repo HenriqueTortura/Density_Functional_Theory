@@ -19,9 +19,11 @@ program Helium
     integer, parameter :: j_max = 200000
     real (kind = 8), parameter :: delta = 0.0001
 
-    logical, parameter :: verbose = .TRUE., SelfInteractionCorrection = .FALSE.
+    logical, parameter :: verbose = .TRUE., Section5_5_2 = .FALSE., Polarised = .FALSE.,&
+    &SIC = .TRUE.
 
-    real (kind = 8) :: Energy, Eigenvalue, Hartree_Correction, Exchange_Correction, Correlation_Correction
+    real (kind = 8) :: Energy, Eigenvalue, Hartree_Correction, Exchange_Correction,&
+    &Correlation_Correction, SIC_Correction
 
     real :: start, finish
 
@@ -31,8 +33,9 @@ program Helium
 
     call HeliumAtom(r_range, Eigenvalue_range, SelfCons_int_max, KS_int_max,&
     &Eigenvalue_tol, u0_tol, SelfCons_tol, Uniform_Numerov, h, j_max, delta, verbose,&
-    &SelfInteractionCorrection, Exchange_Method, Correlation_Method, Z, N_electrons,&
-    &Energy, Eigenvalue, Hartree_Correction, Exchange_Correction, Correlation_Correction)
+    &Section5_5_2, Exchange_Method, Correlation_Method, Polarised, Z, N_electrons,&
+    &SIC, Energy, Eigenvalue, Hartree_Correction, Exchange_Correction,&
+    &Correlation_Correction, SIC_Correction)
 
     call cpu_time(finish)
     print *,"CPU time = ",finish-start,"s"

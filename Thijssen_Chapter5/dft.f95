@@ -107,8 +107,9 @@ contains
 
     subroutine HeliumAtom(r_range, Eigenvalue_range, SelfCons_int_max, KS_int_max,&
     &Eigenvalue_tol, u0_tol, SelfCons_tol, Uniform_Numerov, h, j_max, delta, verbose,&
-    &SelfInteractionCorrection, Exchange_Method, Correlation_Method, Z, N_electrons,&
-    &Energy, Eigenvalue, Hartree_Correction, Exchange_Correction, Correlation_Correction)
+    &Section5_5_2, Exchange_Method, Correlation_Method, Polarised, Z, N_electrons,&
+    &SIC, Energy, Eigenvalue, Hartree_Correction, Exchange_Correction,&
+    &Correlation_Correction, SIC_Correction)
 
         integer, intent(in) :: SelfCons_int_max, KS_int_max, j_max,&
         &Z, N_electrons, Exchange_Method, Correlation_Method
@@ -123,14 +124,17 @@ contains
         real (kind = 8), intent(in) :: Eigenvalue_tol, u0_tol, SelfCons_tol,&
         &h, delta
         real (kind = 8), intent(out) :: Energy, Eigenvalue, Hartree_Correction,&
-        &Exchange_Correction, Correlation_Correction
-        real (kind = 8)  :: Eigenvalue_aux, rp, ExHartree_ratio
+        &Exchange_Correction, Correlation_Correction, SIC_Correction
+
+        real (kind = 8)  :: Eigenvalue_aux, rp, ExHartree_ratio, A, B, C, D,&
+        &gamma_var, beta_1, beta_2
 
         real (kind = 8), dimension(:), allocatable :: r, u, Ext_Potential,&
-        &Hartree, Exchange, Correlation, Potential_U, j_array, r_s, e_c
+        &Hartree, Exchange, Correlation, Potential_U, j_array, r_s, e_c,&
+        &SIC_Potential, SIC_aux, SIC_e_c
 
         logical, dimension(2), intent(in) :: Uniform_Numerov
-        logical, intent(in) :: verbose, SelfInteractionCorrection
+        logical, intent(in) :: verbose, Section5_5_2, Polarised, SIC
 
         if (Uniform_Numerov(1)) then
             n = int((r_range(2)-r_range(1))/h)
@@ -140,7 +144,8 @@ contains
         end if
 
         allocate(r(n), u(n), Ext_Potential(n), Hartree(n), Exchange(n),&
-        &Correlation(n), Potential_U(n), j_array(n), r_s(n), e_c(n), stat = AllocateStatus)
+        &Correlation(n), Potential_U(n), j_array(n), r_s(n), e_c(n),&
+        &SIC_Potential(n), SIC_aux(n), SIC_e_c(n), stat = AllocateStatus)
         if (AllocateStatus /= 0) stop '*** Not enough memory ***'
 
         ! Initializing radial coordinates and potentials
@@ -157,6 +162,7 @@ contains
             Hartree(i) = 0
             Exchange(i) = 0
             Correlation(i) = 0
+            SIC_Potential(i) = 0
         end do
 
         Eigenvalue_aux = 0
@@ -173,13 +179,13 @@ contains
             E_Range_aux = Eigenvalue_Range
             Eigenvalue_aux = Eigenvalue
 
-            call KohnSham1D(r, u, Ext_Potential+Hartree+Exchange+Correlation, E_Range_aux, Eigenvalue,&
+            call KohnSham1D(r, u, Ext_Potential+Hartree+Exchange+Correlation+SIC_Potential, E_Range_aux, Eigenvalue,&
             &KS_int_max, Eigenvalue_tol, u0_tol, n, h, rp, delta, Uniform_Numerov, verbose)
 
             if (abs(Eigenvalue-Eigenvalue_aux)>=SelfCons_tol) then
                 call Poisson(r, u, Potential_U, n, h, rp, delta, Uniform_Numerov)
 
-                if (SelfInteractionCorrection) then
+                if (Section5_5_2) then
                     Hartree = (N_electrons/2)*Potential_U / r
                 else
                     Hartree = N_electrons*Potential_U / r
@@ -195,28 +201,72 @@ contains
                     Correlation = 0
 
                 else if (Correlation_Method == 1) then !Hedin-Lundqvist
-                    r_s = ((3.*r**2.)/u**2.)**(1./3.)
+                    r_s = ((3.*r**2.)/(N_electrons*u**2.))**(1./3.)
                     e_c = -(0.045/2)*( (1+(r_s/21)**3)*log(1+(21/r_s)) + r_s/42 - (r_s/21)**2. - 1/3 )
                     Correlation = -(0.045/2)*log(1+(21/r_s))
 
                 else if (Correlation_Method == 2) then !Perdew-Zunger
-                    r_s = ((3.*r**2.)/u**2.)**(1./3.)
+                    if ( Polarised) then
+                        A = 0.01555
+                        B = -0.0269
+                        !C = 0.0014 ! from Thijssen's table, which I believe to contain a mistake
+                        !D = -0.0108 ! from Thijssen's table, which I believe to contain a mistake
+                        C = 0.0007 ! from paper by Perdew and Zunger
+                        D = -0.0048 ! from paper by Perdew and Zunger
+                        gamma_var = -0.0843
+                        beta_1 = 1.3981
+                        beta_2 = 0.2611
+                    else
+                        A = 0.0311
+                        B = -0.048
+                        C = 0.002
+                        D = -0.0116
+                        gamma_var = -0.1423
+                        beta_1 = 1.0529
+                        beta_2 = 0.3334
+                    end if
+                    r_s = ((3.*r**2.)/(N_electrons*u**2.))**(1./3.)
                     indices1 = pack([(j, j=1,size(r_s))], r_s .GE. 1)
                     indices2 = pack([(j, j=1,size(r_s))], r_s .LT. 1)
 
-                    e_c(indices1) = -0.1423/( 1. + 1.0529*sqrt(r_s(indices1)) + 0.3334*r_s(indices1) )
+                    e_c(indices1) = gamma_var/( 1. + beta_1*sqrt(r_s(indices1)) + beta_2*r_s(indices1) )
 
-                    e_c(indices2) = 0.0311*log(r_s(indices2)) -0.048&
-                    &+0.002*r_s(indices2)*log(r_s(indices2)) -0.0116*r_s(indices2)
+                    e_c(indices2) = A*log(r_s(indices2)) + B + C*r_s(indices2)*log(r_s(indices2)) +&
+                    &D*r_s(indices2)
 
                     Correlation(indices1) = e_c(indices1)*&
-                    &((1. + (7./6.)*1.0529*sqrt(r_s(indices1)) + 0.3334*r_s(indices1))&
-                    & / (1. + 1.0529*sqrt(r_s(indices1)) + 0.3334*r_s(indices1)))
+                    &((1. + (7./6.)*beta_1*sqrt(r_s(indices1)) + beta_2*r_s(indices1))&
+                    & / (1. + beta_1*sqrt(r_s(indices1)) + beta_2*r_s(indices1)))
 
-                    Correlation(indices2) = 0.0311*log(r_s(indices2)) -0.048 -(0.0311/3.)&
-                    &+(2./3.)*0.002*r_s(indices2)*log(r_s(indices2))&
-                    &+(2.*(-0.0116)-0.002)*r_s(indices2)/3
+                    Correlation(indices2) = A*log(r_s(indices2)) + B -(A/3.) +&
+                    &(2./3.)*C*r_s(indices2)*log(r_s(indices2)) + (2.*D-C)*r_s(indices2)/3
                 end if
+
+                if (SIC) then
+                    A = 0.01555
+                    B = -0.0269
+                    C = 0.0007 ! from paper by Perdew and Zunger
+                    D = -0.0048 ! from paper by Perdew and Zunger
+                    gamma_var = -0.0843
+                    beta_1 = 1.3981
+                    beta_2 = 0.2611
+                    r_s = ((3.*r**2.)/(u**2.))**(1./3.)
+                    indices1 = pack([(j, j=1,size(r_s))], r_s .GE. 1)
+                    indices2 = pack([(j, j=1,size(r_s))], r_s .LT. 1)
+                    SIC_e_c(indices1) = gamma_var/( 1. + beta_1*sqrt(r_s(indices1)) + beta_2*r_s(indices1) )
+                    SIC_e_c(indices2) = A*log(r_s(indices2)) + B + C*r_s(indices2)*log(r_s(indices2)) +&
+                    &D*r_s(indices2)
+                    SIC_aux(indices1) = e_c(indices1)*&
+                    &((1. + (7./6.)*beta_1*sqrt(r_s(indices1)) + beta_2*r_s(indices1))&
+                    & / (1. + beta_1*sqrt(r_s(indices1)) + beta_2*r_s(indices1)))
+                    SIC_aux(indices2) = A*log(r_s(indices2)) + B -(A/3.) +&
+                    &(2./3.)*C*r_s(indices2)*log(r_s(indices2)) + (2.*D-C)*r_s(indices2)/3
+
+                    SIC_Potential = -Potential_U/r +((3./4.)*(u/(pi*r))**2.)**(1.0/3.0) -SIC_aux
+                else
+                    SIC_Potential = 0
+                end if
+
             else
                 exit
             end if
@@ -225,16 +275,37 @@ contains
 
         if (Uniform_Numerov(1)) then
             Hartree_Correction = -(N_electrons/2.)*sum(Hartree*(u**2.)*h)
-            Exchange_Correction = -(N_electrons/4.)*sum(Exchange*(u**2.)*h)
+            Exchange_Correction = -(N_electrons)*sum(Exchange*(u**2.)*h)&
+            &-( (9.*((N_electrons)**2.)/(16.*pi))**(2./3.) )*sum(( ((u**4.)/r)**(2./3.) )*h)
             Correlation_Correction = -sum(Correlation*(u**2.)*h) + sum((u**2.)*e_c*h)
+            if (SIC) then
+                SIC_Correction = -sum(SIC_Potential*(u**2.)*h) -N_electrons*( (1./2.)*sum((Potential_U/r)*(u**2.)*h)&
+                & -(( 9./(16.*pi))**(2./3.))*sum(( ((u**4.)/r)**(2./3.) )*h) + sum((u**2.)*SIC_e_c*h) )
+            else
+                SIC_Correction = 0
+            end if
         else
             Hartree_Correction = -rp*delta*(N_electrons/2.)*sum(Hartree*(u**2.)*exp(j_array*delta))
-            Exchange_Correction = -rp*delta*(N_electrons/4.)*sum(Exchange*(u**2.)*exp(j_array*delta))
+            Exchange_Correction = -rp*delta*(N_electrons)*sum(Exchange*(u**2.)*exp(j_array*delta))&
+            &-rp*delta*( (9.*((N_electrons)**2.)/(16.*pi))**(2./3.) )*sum(( ((u**4.)/r)**(2./3.) )*exp(j_array*delta))
             Correlation_Correction = -rp*delta*sum(Correlation*(u**2.)*exp(j_array*delta))&
             &+ rp*delta*sum((u**2.)*e_c*exp(j_array*delta))
+            if (SIC) then
+                SIC_Correction = -rp*delta*sum(SIC_Potential*(u**2.)*exp(j_array*delta))&
+                &-N_electrons*( (1./2.)*rp*delta*sum((Potential_U/r)*(u**2.)*exp(j_array*delta))&
+                & -(( 9./(16.*pi))**(2./3.) )*rp*delta*sum(( ((u**4.)/r)**(2./3.) )*exp(j_array*delta))&
+                &+ rp*delta*sum((u**2.)*SIC_e_c*exp(j_array*delta)) )
+                else
+                SIC_Correction = 0
+            end if
         end if
 
-        Energy = N_electrons*Eigenvalue + Hartree_Correction + Exchange_Correction + Correlation_Correction
+        if (Exchange_Method==0) then !Fixing to be compatible with section 5.5.2
+            Exchange_Correction = 0
+        end if
+
+        Energy = N_electrons*Eigenvalue +Hartree_Correction +Exchange_Correction +Correlation_Correction&
+        &+SIC_Correction
 
         if (verbose) then
             !print *,'Eigenvalue absolute true error: ', abs(-0.52-Eigenvalue)
@@ -246,6 +317,7 @@ contains
             print *, 'Hartree: ', Hartree_Correction
             print *, 'Exchange: ', Exchange_Correction
             print *, 'Correlation: ', Correlation_Correction
+            print *, 'Self-Interaction: ', SIC_Correction
             print *,'**********'
         end if
 
