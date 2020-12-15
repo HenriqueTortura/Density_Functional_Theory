@@ -9,7 +9,14 @@ and the module for Python
 ```bash
 f2py -c -m pydft dft.f95
 ```
-## Running
+## Running All Problems From Thijssen
+To see all problems from Thijssen[[1]](#1), simply run the script
+```bash
+python3 Solutions.py
+```
+Each problem (and the section 5.5) can be run after a y/n command.
+
+## Running Specific Cases
 Call for hydrogen and/or helium solutions (open files to edit parameters)
 ```bash
 f95 -o HydrogenAtom HydrogenAtom.f95 dft.o
@@ -22,7 +29,6 @@ Sweep hydrogen eigenvalues
 f95 -o Sweep Sweep.f95 dft.o
 ./Sweep
 ```
-Make hydrogen plots with `Plotting.py` (make sure HydrogenAtom.f95 ran with parameter `write_data = .TRUE.` or get necessary files from the repository) and evaluate Numerov's method error (Exercise 5.1-e)[[1]](#1) with `51e.py`.
 
 ## References
 <a id="1">[1]</a> 
